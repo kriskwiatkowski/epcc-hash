@@ -1,0 +1,17 @@
+[package]
+name = "demo-cortex-m33"
+version = "0.1.0"
+edition = "2021"
+build = "../common/build.rs"
+
+[[bin]]
+name = "demo-cortex-m33"
+path = "../common/src/arm_m/main.rs"
+test = false
+bench = false
+
+[dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+cortex-m-semihosting = "0.5"
+panic-semihosting = "0.6"

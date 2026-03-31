@@ -1,0 +1,119 @@
+[package]
+name = "stm32h5xx-hal"
+version = "0.0.0"
+edition = "2021"
+authors = ["Edwin Svensson <stm32h5xxhal@olback.net>"]
+homepage = "https://github.com/stm32-rs/stm32h5xx-hal"
+repository = "https://github.com/stm32-rs/stm32h5xx-hal"
+readme = "README.md"
+rust-version = "1.88.0"
+categories = ["embedded", "hardware-support", "no-std"]
+description = "Hardware Abstraction Layer implementation for STM32H5 series microcontrollers"
+keywords = ["arm", "cortex-m", "stm32h5xx", "hal", "embedded-hal"]
+license = "0BSD"
+exclude = [".gitignore", "tools/"]
+
+[package.metadata.docs.rs]
+features = ["stm32h503", "rt"]
+targets = ["thumbv8m.main-none-eabihf"]
+rustdoc-args = ["--cfg", "docsrs"]
+
+[features]
+default = ["rt"]
+
+device-selected = []
+
+# rmXXXX represent processor subfamilies and their common features
+rm0492 = ["gpio-h503"]
+rm0481 = []                 # STM32H52x/6x/7x
+
+# Different subfamily groups have different selections of identical peripherals
+h56x_h573 = ["gpio-h56x_h573"]         # STM32H56x/STM32H573
+h523_h533 = ["gpio-h523_h533"]         # STM32H523/STM32H533
+
+# Different subfamily groups have different GPIOs available and different alternate functions
+# available
+gpio-h503 = []
+gpio-h523_h533 = []
+gpio-h56x_h573 = []
+
+# Some peripherals are only present on specific MCUs within a subfamily group
+ethernet = []               # Only STM32H563/73 have ethernet
+otfdec = []                 # Only STM32H573/33 have OTFDEC
+sdmmc2 = []                 # Only STM32H563/73 have SDMMC2
+
+rt = ["stm32h5/rt"]
+stm32h503 = ["stm32h5/stm32h503", "device-selected", "rm0492"]
+stm32h523 = ["stm32h5/stm32h523", "device-selected", "rm0481", "h523_h533"]
+stm32h533 = ["stm32h5/stm32h533", "device-selected", "rm0481", "h523_h533"]
+stm32h562 = ["stm32h5/stm32h562", "device-selected", "rm0481", "h56x_h573"]
+stm32h563 = ["stm32h5/stm32h563", "device-selected", "rm0481", "h56x_h573", "sdmmc2", "ethernet"]
+stm32h573 = ["stm32h5/stm32h573", "device-selected", "rm0481", "h56x_h573", "otfdec", "sdmmc2", "ethernet"]
+
+# Flags for async APIs
+futures = ["dep:futures-util"]
+gpdma-futures = ["futures"]
+async = ["gpdma-futures"]
+
+# Flags for examples
+log = ["dep:log"]
+log-itm = ["log"]
+log-rtt = ["log"]
+log-semihost = ["log"]
+
+defmt = [
+    "dep:defmt",
+    "fugit/defmt",
+    "stm32h5/defmt",
+]
+
+[dependencies]
+cortex-m = { version = "^0.7.7", features = ["critical-section-single-core"] }
+stm32h5 = { package = "stm32h5", version = "0.16.0" }
+fugit = "0.3.7"
+embedded-dma = "0.2"
+embedded-hal = "1.0.0"
+embedded-io = "0.7.1"
+defmt = { version = "1.0.0", optional = true }
+paste = "1.0.15"
+log = { version = "0.4.20", optional = true}
+futures-util = { version = "0.3", default-features = false, features = ["async-await-macro"], optional = true}
+stm32-usbd = "0.8.0"
+
+[dev-dependencies]
+log = { version = "0.4.20"}
+cortex-m-rt = "0.7.3"
+defmt-rtt = { version = "0.4.0" }
+panic-halt = "0.2.0"
+panic-rtt-target = { version = "0.1.0", features = ["cortex-m"] }
+cfg-if = "1.0.0"
+rtt-target = "0.5.0"
+lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
+cortex-m-log = { version = "0.8.0", features = ["itm", "semihosting", "log-integration"] }
+cortex-m-semihosting = "0.5.0"
+panic-itm = { version = "~0.4.1" }
+panic-probe = "0.3.2"
+panic-semihosting = "0.6"
+usbd-serial = "0.2.2"
+usb-device = { version = "0.3.2", features = ["defmt", "log"] }
+
+[profile.release]
+codegen-units = 1 # better optimizations
+debug = true # symbols are nice and they don't increase the size in flash
+lto = true # better optimizations
+opt-level = "s" # optimize for binary size
+
+[[example]]
+name = "blinky"
+
+[[example]]
+name = "i2c"
+required-features = ["stm32h503"]
+
+[[example]]
+name = "i2c_target"
+required-features = ["stm32h503"]
+
+[[example]]
+name = "i2c_target_manual_ack"
+required-features = ["stm32h503"]
