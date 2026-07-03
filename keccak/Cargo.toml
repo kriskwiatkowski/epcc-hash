@@ -1,0 +1,20 @@
+[package]
+name = "epcc-keccak"
+version = "0.1.0"
+edition = "2021"
+build = "build/build.rs"
+
+[lib]
+crate-type = ["rlib"]
+test = false
+doctest = false
+bench = false
+
+[features]
+semihosting-log = ["dep:cortex-m-semihosting"]
+std = []
+
+[dependencies]
+cfg-if = "1.0.4"
+cortex-m-semihosting = { version = "0.5", optional = true }
+

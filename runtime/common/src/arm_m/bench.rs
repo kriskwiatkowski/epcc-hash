@@ -5,19 +5,12 @@ use cortex_m_rt::entry;
 use cortex_m_semihosting::{debug, hprintln};
 use panic_semihosting as _;
 
-//use demo_keygen::{
-//};
-
 #[entry]
 fn main() -> ! {
-    /*
-    let summary = run_demo();
-
-    hprintln!("Operations Run:");
-    for operation in summary.operations.iter() {
-        hprintln!(" - {}", operation);
+    for (name, f) in common::bench::BENCHMARKS {
+        hprintln!("running {}", name);
+        f();
     }
-    */
     debug::exit(debug::EXIT_SUCCESS);
     loop {
         cortex_m::asm::wfi();

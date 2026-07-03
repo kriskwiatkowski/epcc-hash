@@ -1,0 +1,11 @@
+[package]
+name = "keccak-test"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+semihosting-log = ["epcc-keccak/semihosting-log"]
+std = ["epcc-keccak/std"]
+
+[dependencies]
+epcc-keccak = { path = "../" }

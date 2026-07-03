@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build_and_run_tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ARM target
+        run: rustup target add thumbv7m-none-eabi thumbv8m.main-none-eabi
+
+      - name: Install QEMU
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes wget libfdt1
+          wget -q https://amongbytes.com/sw/qemu/x86_64-unknown-linux-gnu-ubuntu-22.04-qemu_v10.2.1.tar.gz
+          sudo tar xzf x86_64-unknown-linux-gnu-ubuntu-22.04-qemu_v10.2.1.tar.gz -C /usr/local
+
+      - name: Install Nervapy
+        run: python3 -m pip install pynerva==0.0.8
+
+      - name: Run host tests
+        run: cargo test
+
+      - name: Run Cortex-M3 tests
+        run: |
+          cargo build -p cortex-m3 --target thumbv7m-none-eabi --release
+          timeout 60s qemu-system-arm \
+            -machine mps2-an385 \
+            -cpu cortex-m3 \
+            -nographic \
+            -semihosting-config enable=on,target=native \
+            -kernel target/thumbv7m-none-eabi/release/cortex-m3-tests
+
+      - name: Run Cortex-M33 tests
+        run: |
+          cargo build -p cortex-m33 --target thumbv8m.main-none-eabi --release
+          timeout 60s qemu-system-arm \
+            -machine mps2-an521 \
+            -cpu cortex-m33 \
+            -nographic \
+            -semihosting-config enable=on,target=native \
+            -kernel target/thumbv8m.main-none-eabi/release/cortex-m33-tests
+
+      - name: Build STM32H573i-DK firmware
+        run: cargo build --target thumbv8m.main-none-eabi
+        working-directory: runtime/stm32h573i-dk

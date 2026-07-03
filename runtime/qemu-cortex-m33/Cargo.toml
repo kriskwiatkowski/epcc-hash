@@ -1,12 +1,18 @@
 [package]
-name = "demo-cortex-m33"
+name = "cortex-m33"
 version = "0.1.0"
 edition = "2021"
 build = "../common/build.rs"
 
 [[bin]]
-name = "demo-cortex-m33"
-path = "../common/src/arm_m/main.rs"
+name = "cortex-m33-tests"
+path = "../common/src/arm_m/tests.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "cortex-m33-bench"
+path = "../common/src/arm_m/bench.rs"
 test = false
 bench = false
 
@@ -15,3 +21,5 @@ cortex-m = "0.7"
 cortex-m-rt = "0.7"
 cortex-m-semihosting = "0.5"
 panic-semihosting = "0.6"
+keccak-test = { path = "../../keccak/test", features = ["semihosting-log"] }
+runtime-common = { path = "../common" }
