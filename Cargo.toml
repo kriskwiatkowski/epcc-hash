@@ -3,11 +3,26 @@
 resolver = "3"
 
 members = [
+    "runtime/common",
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
-    "runtime/qemu-cortex-m55",
-    "runtime/stm32h573i-dk",]
-
-exclude = [
-    "3rd/stm32h5xx-hal",
+    "keccak",
+    "keccak/test",
 ]
+
+default-members = ["keccak", "keccak/test", "runtime/common"]
+
+exclude = ["3rd/stm32h5xx-hal", "runtime/stm32h573i-dk"]
+
+[profile.dev]
+opt-level = 0
+panic = "abort"
+overflow-checks = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"         # Don't use unwinding on embedded
+strip = "symbols"
+codegen-units = 1       # Better optimization
+overflow-checks = false

@@ -1,0 +1,12 @@
+[package]
+name = "runtime-common"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "common"
+test = false
+doctest = false
+
+[dependencies]
+keccak-test = { path = "../../keccak/test" }
