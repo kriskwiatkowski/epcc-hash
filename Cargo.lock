@@ -148,6 +148,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "qemu-riscv32"
+version = "0.1.0"
+dependencies = [
+ "keccak-test",
+ "runtime-common",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,5 +1,7 @@
 #[cfg(target_arch = "arm")]
 use crate::bitinterleaving_armv8m;
+#[cfg(all(target_arch = "riscv32", target_feature = "zbkb"))]
+use crate::bitinterleaving_rv32;
 
 pub mod bitinterleaving_generic {
     pub fn conv_into_bi(r1: u32, r2: u32) -> (u32, u32) {
@@ -67,7 +69,9 @@ pub mod bitinterleaving_generic {
 
 pub fn conv_into_bi(r1: u32, r2: u32) -> (u32, u32) {
     cfg_if::cfg_if! {
-        if #[cfg(target_arch = "arm")] {
+        if #[cfg(all(target_arch = "riscv32", target_feature = "zbkb"))] {
+            bitinterleaving_rv32::conv_into_bi(r1, r2)
+        } else if #[cfg(target_arch = "arm")] {
             let mut s1 = 0;
             let mut s2 = 0;
             let mut t = 0;
@@ -83,7 +87,10 @@ pub fn conv_into_bi(r1: u32, r2: u32) -> (u32, u32) {
 
 pub fn conv_from_bi(r1: u32, r2: u32) -> (u32, u32) {
     cfg_if::cfg_if! {
-        if #[cfg(target_arch = "arm")]
+        if #[cfg(all(target_arch = "riscv32", target_feature = "zbkb"))] {
+            bitinterleaving_rv32::conv_from_bi(r1, r2)
+        }
+        else if #[cfg(target_arch = "arm")]
         {
             let mut t = 0;
             let mut output_r1 = r1;
