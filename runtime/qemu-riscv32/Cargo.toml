@@ -1,0 +1,14 @@
+[package]
+name = "qemu-riscv32"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "riscv32-tests"
+path = "../common/src/riscv/tests.rs"
+test = false
+bench = false
+
+[dependencies]
+keccak-test = { path = "../../keccak/test" }
+runtime-common = { path = "../common" }

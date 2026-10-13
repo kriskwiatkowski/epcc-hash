@@ -6,6 +6,7 @@ members = [
     "runtime/common",
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
+    "runtime/qemu-riscv32",
     "keccak",
     "keccak/test",
 ]

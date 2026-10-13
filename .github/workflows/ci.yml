@@ -14,8 +14,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install ARM target
-        run: rustup target add thumbv7m-none-eabi thumbv8m.main-none-eabi
+      - name: Install cross targets
+        run: rustup target add thumbv7m-none-eabi thumbv8m.main-none-eabi riscv32imac-unknown-none-elf
 
       - name: Install QEMU
         run: |
@@ -49,6 +49,20 @@ jobs:
             -nographic \
             -semihosting-config enable=on,target=native \
             -kernel target/thumbv8m.main-none-eabi/release/cortex-m33-tests
+
+      # Zbb/Zbkb selects the hand-written RV32 assembly; the plain build
+      # exercises the portable fallback on the same target.
+      - name: Run RV32 tests (Zbb/Zbkb assembly)
+        run: |
+          timeout 60s cargo run -p qemu-riscv32 --bin riscv32-tests \
+            --target riscv32imac-unknown-none-elf --release
+        env:
+          RUSTFLAGS: "-C target-feature=+zbb,+zbkb"
+
+      - name: Run RV32 tests (baseline, portable fallback)
+        run: |
+          timeout 60s cargo run -p qemu-riscv32 --bin riscv32-tests \
+            --target riscv32imac-unknown-none-elf --release
 
       - name: Build STM32H573i-DK firmware
         run: cargo build --target thumbv8m.main-none-eabi
