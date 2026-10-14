@@ -6,9 +6,9 @@ members = [
     "runtime/common",
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
-    "sha3",
-    "sha3/test",
-    "test/kat",
+    "keccak",
+    "keccak/test",
+    # "test/kat",
 ]
 
 default-members = ["keccak", "keccak/test", "runtime/common"]
