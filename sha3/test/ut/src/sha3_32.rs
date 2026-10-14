@@ -1,7 +1,6 @@
-#![cfg_attr(not(test), no_std)]
-
 use epcc_keccak::{
     bitinterleaving::bitinterleaving_generic, conv_from_bi, conv_into_bi,
+    sha3::sha3_256, sha3::sha3_512,
 };
 
 const TEST_INPUTS: [u64; 6] = [
@@ -54,6 +53,15 @@ fn test_conv_from_bi() {
     }
 }
 
+// Wrapper for the global table.
+pub(crate) fn test_conv() {
+    test_conv_into_bi();
+    test_conv_from_bi();
+}
+
+// Declare those tests in the standard Rust way.
+// Tests that can be compiled and run on any generic host
+
 #[cfg(test)]
 #[test]
 fn conv_into_bi_matches_reference() {
@@ -65,42 +73,3 @@ fn conv_into_bi_matches_reference() {
 fn conv_from_bi_matches_reference() {
     test_conv_from_bi();
 }
-
-// convenient: a single table the runners can iterate
-pub const TESTS: &[(&str, fn())] =
-    &[("conv_into_bi", test_conv_into_bi), ("conv_from_bi", test_conv_from_bi)];
-
-// Benchmarks
-
-fn bench_conv_into_bi() {
-    let r1 = core::hint::black_box(0x0123_4567u32);
-    let r2 = core::hint::black_box(0x89ab_cdefu32);
-    let _ = core::hint::black_box(conv_into_bi(r1, r2));
-}
-
-fn bench_generic_conv_into_bi() {
-    let r1 = core::hint::black_box(0x0123_4567u32);
-    let r2 = core::hint::black_box(0x89ab_cdefu32);
-    let _ =
-        core::hint::black_box(bitinterleaving_generic::conv_into_bi(r1, r2));
-}
-
-fn bench_conv_from_bi() {
-    let r1 = core::hint::black_box(0x0123_4567u32);
-    let r2 = core::hint::black_box(0x89ab_cdefu32);
-    let _ = core::hint::black_box(conv_from_bi(r1, r2));
-}
-
-fn bench_generic_conv_from_bi() {
-    let r1 = core::hint::black_box(0x0123_4567u32);
-    let r2 = core::hint::black_box(0x89ab_cdefu32);
-    let _ =
-        core::hint::black_box(bitinterleaving_generic::conv_from_bi(r1, r2));
-}
-
-pub const BENCHMARKS: &[(&str, fn())] = &[
-    ("conv_into_bi", bench_conv_into_bi),
-    ("generic_conv_into_bi", bench_generic_conv_into_bi),
-    ("conv_from_bi", bench_conv_from_bi),
-    ("generic_conv_from_bi", bench_generic_conv_from_bi),
-];

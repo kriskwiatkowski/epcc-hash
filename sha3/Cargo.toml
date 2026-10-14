@@ -1,0 +1,32 @@
+[package]
+name = "epcc-keccak"
+version = "0.1.0"
+edition = "2021"
+build = "build/build.rs"
+
+[lib]
+crate-type = ["rlib"]
+test = false
+doctest = false
+bench = false
+
+[features]
+std = []
+# Selects the bit-interleaved 32-bit-lane permutation (`state: [u32; 50]`)
+# instead of the default 64-bit-lane one (`state: [u64; 25]`). Chosen
+# manually per build, e.g. for targets without efficient 64-bit ops;
+# mutually exclusive with the default.
+keccak32bit = []
+default = []
+# Exposes internal modules (e.g. `bitinterleaving::bitinterleaving_generic`)
+# needed by the `keccak-test` crate to check hardware/optimized paths
+# against the portable reference implementation. Not part of the public API.
+testing = []
+
+[dependencies]
+cfg-if = "1.0.4"
+
+[dev-dependencies]
+katwalk = { version = "0.1.4" }
+env_logger = { version = "0.11" }
+cortex-m-semihosting = { version = "0.5" }

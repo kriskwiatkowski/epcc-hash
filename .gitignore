@@ -54,3 +54,6 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# generated developer-guide site (cargo xtask docs)
+/docs/book

@@ -1,0 +1,13 @@
+[package]
+name = "runtime-host"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dev-dependencies]
+sha3-bench = { workspace = true }
+criterion = "0.8"
+
+[[bench]]
+name = "bitinterleaving"
+harness = false

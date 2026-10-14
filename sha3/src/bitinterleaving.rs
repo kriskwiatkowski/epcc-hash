@@ -1,3 +1,13 @@
+//! Conversions between a 64-bit lane's plain representation (as two
+//! `u32` halves, low/high) and its bit-interleaved one (as even/odd-bit
+//! `u32` halves), used by [`crate::keccak_32`] to move data in and out of
+//! its permutation.
+//!
+//! `conv_into_bi`/`conv_from_bi` dispatch to hand-written ARMv8-M
+//! assembly (`crate::bitinterleaving_armv8m`, only compiled for
+//! `target_arch = "arm"`) on that target, falling back to the portable
+//! [`bitinterleaving_generic`] implementation elsewhere.
+
 #[cfg(target_arch = "arm")]
 use crate::bitinterleaving_armv8m;
 

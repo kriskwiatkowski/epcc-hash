@@ -1,18 +1,20 @@
 [workspace]
-
-resolver = "3"
-
 members = [
     "runtime/common",
+    "runtime/host",
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
-    "keccak",
-    "keccak/test",
+    "runtime/stm32h573i-dk",
+    "sha3",
+    "sha3/test/bench",
+    "sha3/test/ut",
+    "sha3/test/kat",
+    "xtask",
 ]
+resolver = "3"
 
-default-members = ["keccak", "keccak/test", "runtime/common"]
-
-exclude = ["3rd/stm32h5xx-hal", "runtime/stm32h573i-dk"]
+default-members = ["sha3", "sha3/test/ut", "sha3/test/bench"]
+exclude = ["3rd/stm32h5xx-hal"]
 
 [profile.dev]
 opt-level = 0
@@ -26,3 +28,15 @@ panic = "abort"         # Don't use unwinding on embedded
 strip = "symbols"
 codegen-units = 1       # Better optimization
 overflow-checks = false
+
+[profile.test]
+opt-level = 0
+
+[workspace.dependencies]
+keccak-test = { path = "sha3/test/ut" }
+keccak-kat = { path = "sha3/test/kat" }
+sha3-bench = { path = "sha3/test/bench" }
+runtime-common = { path = "runtime/common" }
+stm32h5xx-hal = { path = "3rd/stm32h5xx-hal" }
+epcc-keccak = { path = "sha3" }
+env_logger = "0.11"

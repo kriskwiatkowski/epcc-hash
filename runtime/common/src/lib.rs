@@ -5,5 +5,5 @@ pub mod tests {
 }
 
 pub mod bench {
-    pub use keccak_test::BENCHMARKS;
+    pub use sha3_bench::BENCHMARKS;
 }

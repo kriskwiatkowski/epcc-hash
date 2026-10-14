@@ -1,0 +1,45 @@
+name: Docs
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOCS_MDBOOK_VERSION: ${{ vars.DOCS_MDBOOK_VERSION }}
+  DOCS_MDBOOK_PDF_VERSION: ${{ vars.DOCS_MDBOOK_PDF_VERSION }}
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nervapy
+        run: python3 -m pip install pynerva==0.0.8
+
+      - name: Cache mdbook tools and headless Chromium
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/bin/mdbook
+            ~/.cargo/bin/mdbook-pdf
+            ~/.local/share/headless-chrome
+          key: docs-tools-mdbook-${{ env.DOCS_MDBOOK_VERSION }}-mdbook-pdf-${{ env.DOCS_MDBOOK_PDF_VERSION }}
+
+      - name: Install mdbook and mdbook-pdf
+        run: |
+          # Skip reinstalling when the cache step above already restored the
+          # binary; cargo install would otherwise fail since it won't
+          # overwrite an existing binary without --force.
+          command -v mdbook >/dev/null || cargo install mdbook --version "$DOCS_MDBOOK_VERSION" --locked
+          command -v mdbook-pdf >/dev/null || cargo install mdbook-pdf --version "$DOCS_MDBOOK_PDF_VERSION" --features fetch --locked
+
+      - name: Build API docs
+        run: cargo docs
+
+      - name: Build developer guide (HTML + PDF)
+        run: cargo xtask docs

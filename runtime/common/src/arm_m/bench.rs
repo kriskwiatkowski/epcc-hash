@@ -9,6 +9,7 @@ use panic_semihosting as _;
 fn main() -> ! {
     for (name, f) in common::bench::BENCHMARKS {
         hprintln!("running {}", name);
+        // We don't know where generic build runs, so by default this doesn't measure execution
         f();
     }
     debug::exit(debug::EXIT_SUCCESS);
