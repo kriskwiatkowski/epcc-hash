@@ -9,4 +9,4 @@ test = false
 doctest = false
 
 [dependencies]
-keccak-test = { path = "../../keccak/test" }
+keccak-test = { workspace = true }

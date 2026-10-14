@@ -6,11 +6,12 @@ members = [
     "runtime/common",
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
-    "keccak",
-    "keccak/test",
+    "sha3",
+    #"keccak/test",
+    # "test/kat",
 ]
 
-default-members = ["keccak", "keccak/test", "runtime/common"]
+default-members = ["sha3", "runtime/common"]
 
 exclude = ["3rd/stm32h5xx-hal", "runtime/stm32h573i-dk"]
 
@@ -26,3 +27,9 @@ panic = "abort"         # Don't use unwinding on embedded
 strip = "symbols"
 codegen-units = 1       # Better optimization
 overflow-checks = false
+
+[workspace.dependencies]
+keccak-test = { path = "sha3/test/ut" }
+runtime-common = { path = "runtime/common" }
+stm32h5xx-hal = { path = "3rd/stm32h5xx-hal" }
+epcc-keccak = { path = "sha3" }
