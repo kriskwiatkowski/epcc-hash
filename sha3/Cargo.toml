@@ -17,4 +17,3 @@ std = []
 [dependencies]
 cfg-if = "1.0.4"
 cortex-m-semihosting = { version = "0.5", optional = true }
-
