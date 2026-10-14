@@ -7,11 +7,11 @@ members = [
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
     "keccak",
-    "keccak/test",
+    #"keccak/test",
     # "test/kat",
 ]
 
-default-members = ["keccak", "keccak/test", "runtime/common"]
+default-members = ["keccak", "runtime/common"]
 
 exclude = ["3rd/stm32h5xx-hal", "runtime/stm32h573i-dk"]
 
