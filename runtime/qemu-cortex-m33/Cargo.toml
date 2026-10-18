@@ -21,5 +21,5 @@ cortex-m = "0.7"
 cortex-m-rt = "0.7"
 cortex-m-semihosting = "0.5"
 panic-semihosting = "0.6"
-keccak-test = { workspace = true, features = ["semihosting-log"] }
+keccak-test = { workspace = true }    #, features = ["semihosting-log"] }
 runtime-common = { workspace = true }

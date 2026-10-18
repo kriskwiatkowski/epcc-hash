@@ -1,18 +1,16 @@
 [workspace]
-
-resolver = "3"
-
 members = [
     "runtime/common",
     "runtime/qemu-cortex-m3",
     "runtime/qemu-cortex-m33",
     "sha3",
-    #"keccak/test",
-    # "test/kat",
+    "sha3/test/ut",
+    "sha3/test/kat",
+    "xtask",
 ]
+resolver = "3"
 
 default-members = ["sha3", "runtime/common"]
-
 exclude = ["3rd/stm32h5xx-hal", "runtime/stm32h573i-dk"]
 
 [profile.dev]
@@ -30,6 +28,9 @@ overflow-checks = false
 
 [workspace.dependencies]
 keccak-test = { path = "sha3/test/ut" }
+keccak-kat = { path = "sha3/test/kat" }
 runtime-common = { path = "runtime/common" }
 stm32h5xx-hal = { path = "3rd/stm32h5xx-hal" }
 epcc-keccak = { path = "sha3" }
+katwalk = { path = "../katwalk" }
+env_logger = "0.11"

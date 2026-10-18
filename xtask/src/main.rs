@@ -4,9 +4,18 @@ use std::{
     process::{Command, ExitStatus},
 };
 
-const KATWALK_VERSION: &str = env!("KATWALK_VERSION");
-const VECTOR_REPOSITORY: &str = env!("VECTOR_REPOSITORY");
-const VECTOR_REVISION: &str = env!("VECTOR_REVISION");
+const KATWALK_VERSION: &str = match option_env!("KATWALK_VERSION") {
+    Some(value) => value,
+    None => "0.1.2",
+};
+const VECTOR_REPOSITORY: &str = match option_env!("VECTOR_REPOSITORY") {
+    Some(value) => value,
+    None => "https://github.com/kriskwiatkowski/crypto-test-vectors.git",
+};
+const VECTOR_REVISION: &str = match option_env!("VECTOR_REVISION") {
+    Some(value) => value,
+    None => "159c3ef0068184ff85836b36db8d2e4f06d4d1ac",
+};
 
 fn main() {
     match env::args().nth(1).as_deref() {
@@ -29,21 +38,27 @@ fn run_kats() -> Result<(), Box<dyn std::error::Error>> {
 
     let profile = if cfg!(debug_assertions) { "debug" } else { "release" };
     let mut build = Command::new("cargo");
-    build.current_dir(&root).args(["build", "--bin", "mldsa_wrapper"]);
+    build.current_dir(&root).args([
+        "build",
+        "-p",
+        "epcc-keccak-kat",
+        "--bin",
+        "fips202_wrapper",
+    ]);
     if profile == "release" {
         build.arg("--release");
     }
     build.arg("--features").arg("katwalk-bin");
     run(&mut build)?;
 
-    let wrapper = target.join(profile).join("mldsa_wrapper");
+    let wrapper = target.join(profile).join("fips202_wrapper");
     let katwalk = tools.join("bin/katwalk");
-    let fips_vectors = vectors.join("vectors/acvp/FIPS-204");
+    let fips_vectors = vectors.join("vectors/acvp/FIPS-202");
     run_kat(
         &katwalk,
         &wrapper,
-        &fips_vectors.join("sigVer"),
-        &target.join("sigver_out.json"),
+        &fips_vectors.join("SHA3-256"),
+        &target.join("fips202_out.json"),
     )
 }
 

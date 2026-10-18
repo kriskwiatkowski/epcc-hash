@@ -1,0 +1,23 @@
+[package]
+name = "epcc-keccak-kat"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+std = []
+default = ["std"]
+katwalk-bin = ["dep:env_logger", "dep:katwalk"]
+
+[dependencies]
+epcc-keccak = { workspace = true }
+env_logger = { version = "0.11", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hex = "0.4.3"
+katwalk = { version = "0.1.0", optional = true }
+log = "0.4"
+
+[[bin]]
+name = "fips202_wrapper"
+path = "src/fips202_wrapper.rs"
+required-features = ["katwalk-bin", "std"]
