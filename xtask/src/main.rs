@@ -6,7 +6,7 @@ use std::{
 
 const KATWALK_VERSION: &str = match option_env!("KATWALK_VERSION") {
     Some(value) => value,
-    None => "0.1.2",
+    None => "0.1.4",
 };
 const VECTOR_REPOSITORY: &str = match option_env!("VECTOR_REPOSITORY") {
     Some(value) => value,

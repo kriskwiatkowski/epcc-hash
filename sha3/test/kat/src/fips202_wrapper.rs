@@ -20,6 +20,8 @@ struct Registration {
     algorithm: &'static str,
     #[serde(rename = "messageLength")]
     message_length: [LengthDomain; 1],
+    #[serde(rename = "performLargeDataTest")]
+    perform_large_data_test: [u32; 2],
 }
 
 #[derive(Serialize)]
@@ -37,16 +39,17 @@ macro_rules! REGISTER {
         Registration {
             algorithm: $algorithm,
             message_length: [LengthDomain {
-                min: 8,
+                min: 0,
                 max: 65_536,
                 increment: 8,
             }],
+            perform_large_data_test: [1, 2],
         }
     };
 }
 
 fn config() -> Result<Vec<u8>, String> {
-    serde_json::to_vec(&vec![REGISTER!("SHA3-256"), REGISTER!("SHA3-256/MCT")])
+    serde_json::to_vec(&vec![REGISTER!("SHA3-256")])
         .map_err(|e| format!("failed to serialize ML-DSA configuration: {e}"))
 }
 
@@ -83,6 +86,23 @@ fn hash_sum_mct(message: &[u8]) -> Result<Vec<u8>, String> {
     Ok(m)
 }
 
+fn hash_sum_large_data_set(
+    message: &[u8],
+    in_len: u64,
+) -> Result<Vec<u8>, String> {
+    let n_blocks = in_len / message.len() as u64;
+    let n_rem = in_len - n_blocks * message.len() as u64;
+
+    let mut c = Sha3_256::new();
+    for _ in 0..n_blocks {
+        c.update(message);
+    }
+    if n_rem > 0 {
+        c.update(&message[0..n_rem as usize]);
+    }
+    Ok(c.finalize().to_vec())
+}
+
 fn dispatch(args: &[Vec<u8>]) -> Result<Vec<u8>, String> {
     // TODO: Move to katwalk
     let command = std::str::from_utf8(args.first().ok_or("empty frame")?)
@@ -100,6 +120,16 @@ fn dispatch(args: &[Vec<u8>]) -> Result<Vec<u8>, String> {
         }
         "SHA3-256/MCT" => {
             let digest = hash_sum_mct(&args[1])?;
+            Ok(digest)
+        }
+        "SHA3-256/LDT" => {
+            let in_len = u64::from_le_bytes(
+                args[2]
+                    .as_slice()
+                    .try_into()
+                    .map_err(|_| "invalid input length")?,
+            );
+            let digest = hash_sum_large_data_set(&args[1], in_len)?;
             Ok(digest)
         }
         _ => Err(format!("unknown command: {command}")),
