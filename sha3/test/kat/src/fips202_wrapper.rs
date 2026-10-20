@@ -20,8 +20,6 @@ struct Registration {
     algorithm: &'static str,
     #[serde(rename = "messageLength")]
     message_length: [LengthDomain; 1],
-    #[serde(rename = "performLargeDataTest")]
-    perform_large_data_test: [u32; 2],
 }
 
 #[derive(Serialize)]
