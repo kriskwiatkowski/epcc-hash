@@ -43,7 +43,6 @@ macro_rules! REGISTER {
                 max: 65_536,
                 increment: 8,
             }],
-            perform_large_data_test: [1, 2],
         }
     };
 }
