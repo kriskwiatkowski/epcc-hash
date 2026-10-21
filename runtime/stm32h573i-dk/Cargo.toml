@@ -29,7 +29,7 @@ panic-probe = { version = "0.3" }
 rtt-target = { version = "0.5.0", optional = true }
 runtime-common = { workspace = true }
 
-stm32h5xx-hal = { workspace-true, default-features = false, features = [
+stm32h5xx-hal = { workspace = true, default-features = false, features = [
     "stm32h573",
     "rt",
 ] }
