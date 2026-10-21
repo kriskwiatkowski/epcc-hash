@@ -73,7 +73,7 @@ impl Permute for [u64; 25] {
                         state[x + 5 * y].rotate_left(RHO[x + 5 * y]);
                 }
             }
-            
+
             // Chi
             for y in 0..5 {
                 for x in 0..5 {
@@ -84,6 +84,20 @@ impl Permute for [u64; 25] {
 
             // Iota
             state[0] ^= rc;
+        }
+    }
+
+    fn absorb_block(&mut self, block: &[u8]) {
+        for (i, chunk) in block.chunks_exact(8).enumerate() {
+            let mut lane_bytes = [0u8; 8];
+            lane_bytes.copy_from_slice(chunk);
+            self[i] ^= u64::from_le_bytes(lane_bytes);
+        }
+    }
+
+    fn squeeze_block(&mut self, output: &mut [u8]) {
+        for (i, chunk) in output.chunks_exact_mut(8).enumerate() {
+            chunk.copy_from_slice(&self[i].to_le_bytes());
         }
     }
 }

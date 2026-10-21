@@ -6,3 +6,4 @@ rustflags = ["-C", "link-arg=-Tlink.x"]
 
 [alias]
 xtask = "run -p xtask --"
+xtask-rel = "run -p xtask --release --"

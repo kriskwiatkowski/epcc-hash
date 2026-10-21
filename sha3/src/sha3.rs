@@ -1,4 +1,6 @@
 use crate::keccak_32::*;
+use crate::keccak_64::*;
+use crate::{KeccakState, KECCAK_STATE_ZERO};
 use crate::Permute;
 use crate::{conv_from_bi, conv_into_bi};
 
@@ -13,9 +15,11 @@ const MAX_RATE: usize = 144;
 /// [`Sha3_256`], [`Sha3_384`], [`Sha3_512`] aliases rather than naming
 /// this type directly.
 pub struct Sha3<const RATE: usize, const OUTPUT_LEN: usize> {
-    // Bit-interleaved state: lane `i`'s even/odd halves live at
-    // `state[2 * i]`/`state[2 * i + 1]` (see `permutation_32`).
-    state: [u32; 50],
+    // Layout depends on `KeccakState` (see `lib.rs`): with the default
+    // 64-bit lanes this is the plain Keccak state; with `keccak32bit`,
+    // lane `i`'s even/odd halves live at `state[2 * i]`/`state[2 * i + 1]`
+    // (see `keccak_32::permute`).
+    state: KeccakState,
     buf: [u8; MAX_RATE],
     buf_len: usize,
 }
@@ -26,7 +30,7 @@ impl<const RATE: usize, const OUTPUT_LEN: usize> Sha3<RATE, OUTPUT_LEN> {
             assert!(RATE > 0 && RATE <= MAX_RATE && RATE % 8 == 0);
             assert!(OUTPUT_LEN > 0 && OUTPUT_LEN <= RATE);
         }
-        Self { state: [0u32; 50], buf: [0u8; MAX_RATE], buf_len: 0 }
+        Self { state: KECCAK_STATE_ZERO, buf: [0u8; MAX_RATE], buf_len: 0 }
     }
 
     pub fn update(&mut self, mut data: &[u8]) {
@@ -66,6 +70,7 @@ impl<const RATE: usize, const OUTPUT_LEN: usize> Sha3<RATE, OUTPUT_LEN> {
     }
 
     pub fn finalize(mut self) -> [u8; OUTPUT_LEN] {
+        // Pad the remaining bytes in the buffer and absorb the final block.
         for b in &mut self.buf[self.buf_len..RATE] {
             *b = 0;
         }
@@ -74,14 +79,7 @@ impl<const RATE: usize, const OUTPUT_LEN: usize> Sha3<RATE, OUTPUT_LEN> {
         self.absorb_buffered_block();
 
         let mut out = [0u8; OUTPUT_LEN];
-        for (i, chunk) in out.chunks_mut(8).enumerate() {
-            let (lo, hi) =
-                conv_from_bi(self.state[2 * i], self.state[2 * i + 1]);
-            let mut lane = [0u8; 8];
-            lane[..4].copy_from_slice(&lo.to_le_bytes());
-            lane[4..].copy_from_slice(&hi.to_le_bytes());
-            chunk.copy_from_slice(&lane[..chunk.len()]);
-        }
+        self.state.squeeze_block(&mut out);
         out
     }
 }

@@ -20,6 +20,8 @@ struct Registration {
     algorithm: &'static str,
     #[serde(rename = "messageLength")]
     message_length: [LengthDomain; 1],
+    #[serde(rename = "performLargeDataTest")]
+    perform_large_data_test: Vec<u8>,
 }
 
 #[derive(Serialize)]
@@ -41,6 +43,7 @@ macro_rules! REGISTER {
                 max: 65_536,
                 increment: 8,
             }],
+            perform_large_data_test: vec![],
         }
     };
 }
@@ -89,10 +92,10 @@ fn hash_sum_large_data_set(
 ) -> Result<Vec<u8>, String> {
     let n_blocks = in_len / message.len() as u64;
     let n_rem = in_len - n_blocks * message.len() as u64;
-
     let mut c = Sha3_256::new();
-    for _ in 0..n_blocks {
-        c.update(message);
+
+    for n in 0..n_blocks {
+        c.update(&message);
     }
     if n_rem > 0 {
         c.update(&message[0..n_rem as usize]);

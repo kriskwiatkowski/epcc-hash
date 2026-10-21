@@ -12,6 +12,11 @@ bench = false
 
 [features]
 std = []
+# Selects the bit-interleaved 32-bit-lane permutation (`state: [u32; 50]`)
+# instead of the default 64-bit-lane one (`state: [u64; 25]`). Chosen
+# manually per build, e.g. for targets without efficient 64-bit ops;
+# mutually exclusive with the default.
+keccak32bit = []
 default = ["std"]
 
 [dependencies]

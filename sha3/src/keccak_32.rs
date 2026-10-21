@@ -187,4 +187,14 @@ impl Permute for [u32; 50] {
             self[2 * i + 1] ^= o;
         }
     }
+
+    fn squeeze_block(&mut self, output: &mut [u8]) {
+        for (i, chunk) in output.chunks_exact_mut(8).enumerate() {
+            let e = self[2 * i];
+            let o = self[2 * i + 1];
+            let (lo, hi) = conv_from_bi(e, o);
+            chunk[..4].copy_from_slice(&lo.to_le_bytes());
+            chunk[4..].copy_from_slice(&hi.to_le_bytes());
+        }
+    }
 }
