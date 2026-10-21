@@ -1,8 +1,12 @@
 use crate::keccak_32::*;
 use crate::keccak_64::*;
-use crate::{KeccakState, KECCAK_STATE_ZERO};
 use crate::Permute;
 use crate::{conv_from_bi, conv_into_bi};
+use crate::{KeccakState, KECCAK_STATE_ZERO};
+use core::assert;
+use core::cmp::Ord;
+use core::debug_assert_eq;
+use core::default::Default;
 
 const SHA3_DOMAIN: u8 = 0x06;
 

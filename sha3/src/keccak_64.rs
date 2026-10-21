@@ -1,4 +1,5 @@
 use crate::Permute;
+use core::iter::Iterator;
 
 const ROUNDS: usize = 24;
 

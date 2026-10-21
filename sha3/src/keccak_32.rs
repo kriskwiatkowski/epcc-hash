@@ -20,6 +20,8 @@
 //! `Aba0`/`Aba1` .. `Asu0`/`Asu1` offsets.
 
 use crate::Permute;
+use core::convert::TryInto;
+use core::iter::Iterator;
 
 const ROUNDS: usize = 24;
 use crate::{conv_from_bi, conv_into_bi};
@@ -111,7 +113,7 @@ impl Permute for [u32; 50] {
     /// Apply the Keccak-f\[1600\] permutation to the bit-interleaved `state`
     /// (24 rounds of Theta, Rho, Pi, Chi, Iota).
     fn permute(&mut self) {
-        let mut state = self;
+        let state = self;
         for round in 0..ROUNDS {
             // Theta
             let mut ce = [0u32; 5];
