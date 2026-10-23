@@ -71,9 +71,9 @@ fn expect_args<'a>(
 
 fn hash_sum(message: &[u8]) -> Result<Vec<u8>, String> {
     let mut c = Sha3_256::new();
-    let digest: [u8; 32];
+    let mut digest = [0u8; 32];
     c.update(message);
-    digest = c.finalize();
+    c.finalize(&mut digest);
     Ok(digest.to_vec())
 }
 
@@ -93,6 +93,7 @@ fn hash_sum_large_data_set(
     let n_blocks = in_len / message.len() as u64;
     let n_rem = in_len - n_blocks * message.len() as u64;
     let mut c = Sha3_256::new();
+    let mut out = vec![0u8; 32];
 
     for n in 0..n_blocks {
         c.update(&message);
@@ -100,7 +101,8 @@ fn hash_sum_large_data_set(
     if n_rem > 0 {
         c.update(&message[0..n_rem as usize]);
     }
-    Ok(c.finalize().to_vec())
+    c.finalize(&mut out);
+    Ok(out)
 }
 
 fn dispatch(args: &[Vec<u8>]) -> Result<Vec<u8>, String> {

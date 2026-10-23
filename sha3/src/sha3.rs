@@ -73,7 +73,7 @@ impl<const RATE: usize, const OUTPUT_LEN: usize> Sha3<RATE, OUTPUT_LEN> {
         self.state.permute();
     }
 
-    pub fn finalize(mut self) -> [u8; OUTPUT_LEN] {
+    pub fn finalize(mut self, out: &mut [u8]) -> &[u8] {
         // Pad the remaining bytes in the buffer and absorb the final block.
         for b in &mut self.buf[self.buf_len..RATE] {
             *b = 0;
@@ -82,8 +82,7 @@ impl<const RATE: usize, const OUTPUT_LEN: usize> Sha3<RATE, OUTPUT_LEN> {
         self.buf[RATE - 1] ^= 0x80;
         self.absorb_buffered_block();
 
-        let mut out = [0u8; OUTPUT_LEN];
-        self.state.squeeze_block(&mut out);
+        self.state.squeeze_block(out);
         out
     }
 }
@@ -96,31 +95,21 @@ impl<const RATE: usize, const OUTPUT_LEN: usize> Default
     }
 }
 
-pub type Sha3_224 = Sha3<144, 28>;
 pub type Sha3_256 = Sha3<136, 32>;
-pub type Sha3_384 = Sha3<104, 48>;
 pub type Sha3_512 = Sha3<72, 64>;
-
-pub fn sha3_224(data: &[u8]) -> [u8; 28] {
-    let mut h = Sha3_224::new();
-    h.update(data);
-    h.finalize()
-}
 
 pub fn sha3_256(data: &[u8]) -> [u8; 32] {
     let mut h = Sha3_256::new();
+    let mut out = [0u8; 32];
     h.update(data);
-    h.finalize()
-}
-
-pub fn sha3_384(data: &[u8]) -> [u8; 48] {
-    let mut h = Sha3_384::new();
-    h.update(data);
-    h.finalize()
+    h.finalize(&mut out);
+    out
 }
 
 pub fn sha3_512(data: &[u8]) -> [u8; 64] {
     let mut h = Sha3_512::new();
     h.update(data);
-    h.finalize()
+    let mut out = [0u8; 64];
+    h.finalize(&mut out);
+    out
 }
