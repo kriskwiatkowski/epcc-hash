@@ -11,7 +11,7 @@ members = [
 ]
 resolver = "3"
 
-default-members = ["sha3", "runtime/common"]
+default-members = ["sha3"]
 exclude = ["3rd/stm32h5xx-hal"]
 
 [profile.dev]
