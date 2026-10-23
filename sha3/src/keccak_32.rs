@@ -35,62 +35,39 @@ const RHO: [u32; 25] = [
     18, 2, 61, 56, 14,
 ];
 
-// Round constants from `KeccakF1600_StatePermute_RoundConstantsWithTerminator`
-// in the assembly, split into their even-bit and odd-bit halves (so that
-// `RCE[r]` combined with `RCO[r]` the way [`crate::conv_from_bi`] combines
-// a lane's halves equals `crate::permutation_64::RC[r]`).
-const RCE: [u32; ROUNDS] = [
-    0x0000_0001,
-    0x0000_0000,
-    0x0000_0000,
-    0x0000_0000,
-    0x0000_0001,
-    0x0000_0001,
-    0x0000_0001,
-    0x0000_0001,
-    0x0000_0000,
-    0x0000_0000,
-    0x0000_0001,
-    0x0000_0000,
-    0x0000_0001,
-    0x0000_0001,
-    0x0000_0001,
-    0x0000_0001,
-    0x0000_0000,
-    0x0000_0000,
-    0x0000_0000,
-    0x0000_0000,
-    0x0000_0001,
-    0x0000_0000,
-    0x0000_0001,
-    0x0000_0000,
-];
+// Round constants split into their even-bit and odd-bit halves (so that
+// `RC[r].even` combined with `RC[r].odd` the way [`crate::conv_from_bi`]
+// combines a lane's halves equals `crate::permutation_64::RC[r]`).
+struct RcT {
+    even: u32,
+    odd: u32,
+}
 
-const RCO: [u32; ROUNDS] = [
-    0x0000_0000,
-    0x0000_0089,
-    0x8000_008b,
-    0x8000_8080,
-    0x0000_008b,
-    0x0000_8000,
-    0x8000_8088,
-    0x8000_0082,
-    0x0000_000b,
-    0x0000_000a,
-    0x0000_8082,
-    0x0000_8003,
-    0x0000_808b,
-    0x8000_000b,
-    0x8000_008a,
-    0x8000_0081,
-    0x8000_0081,
-    0x8000_0008,
-    0x0000_0083,
-    0x8000_8003,
-    0x8000_8088,
-    0x8000_0088,
-    0x0000_8000,
-    0x8000_8082,
+const RC: [RcT; ROUNDS] = [
+    RcT { even: 0x0000_0001, odd: 0x0000_0000 },
+    RcT { even: 0x0000_0000, odd: 0x0000_0089 },
+    RcT { even: 0x0000_0000, odd: 0x8000_008b },
+    RcT { even: 0x0000_0000, odd: 0x8000_8080 },
+    RcT { even: 0x0000_0001, odd: 0x0000_008b },
+    RcT { even: 0x0000_0001, odd: 0x0000_8000 },
+    RcT { even: 0x0000_0001, odd: 0x8000_8088 },
+    RcT { even: 0x0000_0001, odd: 0x8000_0082 },
+    RcT { even: 0x0000_0000, odd: 0x0000_000b },
+    RcT { even: 0x0000_0000, odd: 0x0000_000a },
+    RcT { even: 0x0000_0001, odd: 0x0000_8082 },
+    RcT { even: 0x0000_0000, odd: 0x0000_8003 },
+    RcT { even: 0x0000_0001, odd: 0x0000_808b },
+    RcT { even: 0x0000_0001, odd: 0x8000_000b },
+    RcT { even: 0x0000_0001, odd: 0x8000_008a },
+    RcT { even: 0x0000_0001, odd: 0x8000_0081 },
+    RcT { even: 0x0000_0000, odd: 0x8000_0081 },
+    RcT { even: 0x0000_0000, odd: 0x8000_0008 },
+    RcT { even: 0x0000_0000, odd: 0x0000_0083 },
+    RcT { even: 0x0000_0000, odd: 0x8000_8003 },
+    RcT { even: 0x0000_0001, odd: 0x8000_8088 },
+    RcT { even: 0x0000_0000, odd: 0x8000_0088 },
+    RcT { even: 0x0000_0001, odd: 0x0000_8000 },
+    RcT { even: 0x0000_0000, odd: 0x8000_8082 },
 ];
 
 /// Rotate a bit-interleaved 64-bit lane (given as its even/odd 32-bit
@@ -175,8 +152,8 @@ impl Permute for [u32; 50] {
             }
 
             // Iota
-            state[0] ^= RCE[round];
-            state[1] ^= RCO[round];
+            state[0] ^= RC[round].even;
+            state[1] ^= RC[round].odd;
         }
     }
 

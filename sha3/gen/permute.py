@@ -14,8 +14,6 @@ from nervapy.arm.formats import AssemblyFormat
 from nervapy.arm.registers import r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, lr, sp
 from pathlib import Path
 
-
-
 class Generator(object):
     def __init__(self, asm_format=AssemblyFormat.GAS, target=Microarchitecture.CortexM33, output_dir=Path("."), lang="generic"):
         self.asm_format = asm_format
