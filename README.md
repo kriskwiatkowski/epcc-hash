@@ -22,7 +22,7 @@ Build and run for each supported core:
 **Cortex-M3**
 
 ```bash
-cargo build -p demo-cortex-m3 --target thumbv7m-none-eabi
+cargo build -p cortex-m3 --target thumbv7m-none-eabi
 qemu-system-arm \
   -machine mps2-an385 \
   -cpu cortex-m3 \
@@ -34,7 +34,7 @@ qemu-system-arm \
 **Cortex-M33**
 
 ```bash
-cargo build -p demo-cortex-m33 --target thumbv8m.main-none-eabi
+cargo build -p cortex-m33 --target thumbv8m.main-none-eabi
 qemu-system-arm \
   -machine mps2-an521 \
   -cpu cortex-m33 \
@@ -51,7 +51,7 @@ all tests pass.
 Replace the binary name with the `-bench` variant, e.g. for Cortex-M33:
 
 ```bash
-cargo build -p demo-cortex-m33 --target thumbv8m.main-none-eabi
+cargo build -p cortex-m33 --target thumbv8m.main-none-eabi
 qemu-system-arm \
   -machine mps2-an521 \
   -cpu cortex-m33 \
