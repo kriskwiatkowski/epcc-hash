@@ -5,7 +5,8 @@ use katwalk::modulewrapper;
 use serde::Serialize;
 
 use env_logger::{Builder, Target};
-use epcc_keccak::sha3::Sha3_256;
+use epcc_keccak::sha3::sha3_256;
+use epcc_keccak::sha3::Sha3;
 use log::LevelFilter;
 use log::{error, info};
 use std::fs::OpenOptions;
@@ -70,8 +71,8 @@ fn expect_args<'a>(
 }
 
 fn hash_sum(message: &[u8]) -> Result<Vec<u8>, String> {
-    let mut c = Sha3_256::new();
     let mut digest = [0u8; 32];
+    let mut c = Sha3::Sha3_256();
     c.update(message);
     c.finalize(&mut digest);
     Ok(digest.to_vec())
@@ -92,7 +93,7 @@ fn hash_sum_large_data_set(
 ) -> Result<Vec<u8>, String> {
     let n_blocks = in_len / message.len() as u64;
     let n_rem = in_len - n_blocks * message.len() as u64;
-    let mut c = Sha3_256::new();
+    let mut c = Sha3::Sha3_256();
     let mut out = vec![0u8; 32];
 
     for n in 0..n_blocks {
