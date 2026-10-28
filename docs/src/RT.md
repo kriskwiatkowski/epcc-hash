@@ -56,10 +56,16 @@ cargo bench -p runtime-host
 ```
 
 Useful during development when real hardware isn't at hand: runs the same
-`sha3_bench::BENCHMARKS` table as the embedded runtimes, timed via
-[criterion](https://github.com/bheisler/criterion.rs) instead of the DWT
-cycle counter. Since `bitinterleaving_armv8m`'s assembly only compiles
-under `target_arch = "arm"`, on a non-ARM host this measures the portable
+`sha3_bench::BENCHMARKS` table as the embedded runtimes, via
+[criterion](https://github.com/bheisler/criterion.rs). On x86/x86_64,
+[criterion-cycles-per-byte](https://github.com/wainwrightmark/criterion-cycles-per-byte)
+is used to report cycles (read via the `RDTSC` timestamp counter) rather
+than wall-clock time, so results are comparable in kind to the DWT cycle
+counts from real hardware — though `RDTSC` ticks at a fixed reference
+frequency rather than the core's dynamic clock, so treat these as relative
+numbers, not exact retired-instruction cycle counts. Since
+`bitinterleaving_armv8m`'s assembly only compiles under
+`target_arch = "arm"`, on a non-ARM host this measures the portable
 fallback path on both sides of each comparison, not the hand-written ARM
 assembly — for real on-device numbers, see
 [Running on STM32H573I-DK](#running-on-stm32h573i-dk) below. An HTML report
