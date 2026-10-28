@@ -10,7 +10,7 @@ fn main() -> ! {
     for (name, f) in common::bench::BENCHMARKS {
         hprintln!("running {}", name);
         // We don't know where generic build runs, so by default this doesn't measure execution
-        f();
+        f(0);
     }
     debug::exit(debug::EXIT_SUCCESS);
     loop {

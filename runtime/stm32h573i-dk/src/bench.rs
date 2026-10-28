@@ -26,11 +26,11 @@ fn main() -> ! {
     info!("{:<32} {:>12} {:>12}", "name", "cycles", "us");
     info!("{:-<58}", "");
     for (name, f) in common::bench::BENCHMARKS {
-        f(); // warm-up
+        let mut acc = f(0); // warm-up
         let mut total_ticks = 0u64;
         let mut total_nanos = 0u64;
         for _ in 0..K_NUM_ITERS {
-            let cd = dwt.measure(|| f());
+            let cd = dwt.measure(|| acc = f(acc));
             total_ticks += cd.as_ticks() as u64;
             total_nanos += cd.as_nanos() as u64;
         }
