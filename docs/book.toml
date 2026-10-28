@@ -1,0 +1,12 @@
+[book]
+title = "epcc-hash manual"
+src = "src"
+
+[build]
+build-dir = "book"
+
+[output.html]
+default-theme = "coal"
+preferred-dark-theme = "coal"
+
+[output.pdf]

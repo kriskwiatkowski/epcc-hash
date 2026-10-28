@@ -1,0 +1,11 @@
+[package]
+name = "sha3-bench"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["std"]
+std = ["epcc-keccak/std"]
+
+[dependencies]
+epcc-keccak = { workspace = true, features = ["testing"] }

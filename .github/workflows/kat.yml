@@ -1,0 +1,27 @@
+name: KAT
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  KATWALK_VERSION: ${{ vars.KATWALK_VERSION }}
+
+jobs:
+  validation_kat:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Nervapy
+        run: python3 -m pip install pynerva==0.0.8
+
+      - name: Install katwalk
+        run: cargo install katwalk --version "$KATWALK_VERSION" --locked
+
+      - name: ACVP validation
+        run: cargo xtask kat
