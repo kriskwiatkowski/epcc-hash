@@ -14,6 +14,8 @@ from nervapy.arm.formats import AssemblyFormat
 from nervapy.arm.registers import r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, lr, sp
 from pathlib import Path
 
+from writer import Writer
+
 def toBitInterleaving(x0, x1, s0, s1, t, s0_ptr, s1_ptr, over):
     """
     Convert two 32-bit words (x0, x1) from natural to bit-interleaved representation.    
@@ -150,43 +152,6 @@ class Generator(object):
         self.output_dir = output_dir
         self.lang = lang
 
-    class Writer(object):
-        ''' Context manager for writing assembly output to a file in a format required by the target language. '''
-        def __init__(self, output_dir, language, filename):
-            ''' Initialize the writer with the output directory, target language, and filename. 
-            
-            Args:
-                output_dir (Path): The directory where the output file will be written.
-                language (str): The target language for the output file. Can be "rust" or
-                    "generic" (for assembly).
-                filename (str): The base name of the output file (without extension).
-            '''
-            self.output_dir = output_dir
-            self.language = language
-            if language == "rust":
-                self.fname = filename + ".rs"
-            else:
-                self.fname = filename + ".s"
-
-        def __enter__(self):
-            self.fhandle = open(self.output_dir / self.fname, "w")
-            return self
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.fhandle.close()
-            return False
-
-        def write(self, asm):
-            ''' Write (append) the assembly output to the file in the appropriate format for the target language. 
-            
-            Args:
-                asm: The assembly output to write.
-            '''
-            if self.language == "rust":
-                self.fhandle.write(asm.rust_module)
-            else:
-                self.fhandle.write(asm.assembly)
-
     def _func_common_setup(self, f):
         f.abi = arm_gnueabihf
         f.target = self.target
@@ -198,7 +163,7 @@ class Generator(object):
 
     def run_generator_and_write(self, filename, prefix=""):
         ''' Run the generator and write the output files to the specified directory. '''
-        with self.Writer(self.output_dir, self.lang, filename) as w:
+        with Writer(self.output_dir, self.lang, filename) as w:
             # Define function arguments
             r1_arg = Argument(const_uint32_t)             # Input buffer
             r2_arg = Argument(const_uint32_t)             # Input buffer
