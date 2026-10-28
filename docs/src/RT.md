@@ -71,6 +71,45 @@ assembly — for real on-device numbers, see
 [Running on STM32H573I-DK](#running-on-stm32h573i-dk) below. An HTML report
 is written to `target/criterion/report/index.html`.
 
+### Getting accurate cycle counts on X86
+
+Under CPU frequency boost, `RDTSC` ticks fall behind the core's actual
+clock - it increments at a fixed reference rate (usually the CPU's base/
+"nominal" frequency), so when the core briefly runs faster, it retires
+more real work per tick than at that reference rate. Reported "cycles"
+on a boosting machine therefore undercount the true per-call cost.
+
+To get numbers that line up with real core cycles, pin the CPU to its
+nominal (non-boost) frequency before running the benchmark. Find that
+frequency first:
+
+```bash
+cpupower frequency-info
+```
+
+Look for the `Nominal Frequency` line under "amd-pstate limits" (AMD) or
+the equivalent base-clock figure for your CPU, then pin to it:
+
+```bash
+# Disable turbo/boost globally
+sudo sh -c 'echo 0 > /sys/devices/system/cpu/cpufreq/boost'
+
+# Use the performance governor (no powersave throttling)
+sudo cpupower frequency-set -g performance
+
+# Pin min = max to the nominal frequency, e.g. 2.00 GHz
+sudo cpupower frequency-set -d 2000000 -u 2000000
+```
+
+This is a system-wide change — it affects every process until reverted,
+and will reduce peak performance while active. Revert with:
+
+```bash
+sudo cpupower frequency-set -d <cpuinfo_min_freq> -u <cpuinfo_max_freq>
+sudo cpupower frequency-set -g powersave
+sudo sh -c 'echo 1 > /sys/devices/system/cpu/cpufreq/boost'
+```
+
 ## Running benchmarks on embedded (QEMU)
 
 Replace the binary name with the `-bench` variant, e.g. for Cortex-M33:
