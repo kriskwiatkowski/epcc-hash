@@ -16,6 +16,9 @@ use crate::{conv_from_bi, conv_into_bi};
 use core::convert::TryInto;
 use core::iter::Iterator;
 
+#[cfg(target_arch = "arm")]
+use crate::keccak_permute_armv8m::epcc_keccak_permute_asm;
+
 // Round constants split into their even-bit and odd-bit halves (so that
 // `RC[r].even` combined with `RC[r].odd` the way [`crate::conv_from_bi`]
 // combines a lane's halves equals `crate::permutation_64::RC[r]`).
@@ -71,70 +74,78 @@ impl Permute for [u32; 50] {
     /// Apply the Keccak-f\[1600\] permutation to the bit-interleaved `state`
     /// (24 rounds of Theta, Rho, Pi, Chi, Iota).
     fn permute(&mut self) {
-        let state = self;
-        for round in 0..ROUNDS {
-            // Theta
-            let mut ce = [0u32; 5];
-            let mut co = [0u32; 5];
-            for x in 0..5 {
-                let mut e = 0u32;
-                let mut o = 0u32;
+        cfg_if::cfg_if! {
+            if #[cfg(target_arch = "arm")] {
+                unsafe {
+                    epcc_keccak_permute_asm(self.as_mut_ptr());
+                }
+        } else  {
+            let state = self;
+            for round in 0..ROUNDS {
+                // Theta
+                let mut ce = [0u32; 5];
+                let mut co = [0u32; 5];
+                for x in 0..5 {
+                    let mut e = 0u32;
+                    let mut o = 0u32;
+                    for y in 0..5 {
+                        let i = x + 5 * y;
+                        e ^= state[2 * i];
+                        o ^= state[2 * i + 1];
+                    }
+                    ce[x] = e;
+                    co[x] = o;
+                }
+
+                // D[x] = C[x - 1] xor rotl64(C[x + 1], 1); rotl64(_, 1) is odd, so
+                // it swaps the even/odd halves (see rotl64_bi below).
+                let mut de = [0u32; 5];
+                let mut do_ = [0u32; 5];
+                for x in 0..5 {
+                    let (re, ro) = rotl64_bi(ce[(x + 1) % 5], co[(x + 1) % 5], 1);
+                    de[x] = ce[(x + 4) % 5] ^ re;
+                    do_[x] = co[(x + 4) % 5] ^ ro;
+                }
                 for y in 0..5 {
-                    let i = x + 5 * y;
-                    e ^= state[2 * i];
-                    o ^= state[2 * i + 1];
+                    for x in 0..5 {
+                        let i = x + 5 * y;
+                        state[2 * i] ^= de[x];
+                        state[2 * i + 1] ^= do_[x];
+                    }
                 }
-                ce[x] = e;
-                co[x] = o;
-            }
 
-            // D[x] = C[x - 1] xor rotl64(C[x + 1], 1); rotl64(_, 1) is odd, so
-            // it swaps the even/odd halves (see rotl64_bi below).
-            let mut de = [0u32; 5];
-            let mut do_ = [0u32; 5];
-            for x in 0..5 {
-                let (re, ro) = rotl64_bi(ce[(x + 1) % 5], co[(x + 1) % 5], 1);
-                de[x] = ce[(x + 4) % 5] ^ re;
-                do_[x] = co[(x + 4) % 5] ^ ro;
-            }
-            for y in 0..5 {
-                for x in 0..5 {
-                    let i = x + 5 * y;
-                    state[2 * i] ^= de[x];
-                    state[2 * i + 1] ^= do_[x];
+                // Rho + Pi
+                let mut be = [0u32; 25];
+                let mut bo = [0u32; 25];
+                for y in 0..5 {
+                    for x in 0..5 {
+                        let i = x + 5 * y;
+                        let (ne, no) =
+                            rotl64_bi(state[2 * i], state[2 * i + 1], RHO[i]);
+                        let new_x = y;
+                        let new_y = (2 * x + 3 * y) % 5;
+                        let j = new_x + 5 * new_y;
+                        be[j] = ne;
+                        bo[j] = no;
+                    }
                 }
-            }
 
-            // Rho + Pi
-            let mut be = [0u32; 25];
-            let mut bo = [0u32; 25];
-            for y in 0..5 {
-                for x in 0..5 {
-                    let i = x + 5 * y;
-                    let (ne, no) =
-                        rotl64_bi(state[2 * i], state[2 * i + 1], RHO[i]);
-                    let new_x = y;
-                    let new_y = (2 * x + 3 * y) % 5;
-                    let j = new_x + 5 * new_y;
-                    be[j] = ne;
-                    bo[j] = no;
+                // Chi
+                for y in 0..5 {
+                    for x in 0..5 {
+                        let i = x + 5 * y;
+                        let i1 = (x + 1) % 5 + 5 * y;
+                        let i2 = (x + 2) % 5 + 5 * y;
+                        state[2 * i] = be[i] ^ (!be[i1] & be[i2]);
+                        state[2 * i + 1] = bo[i] ^ (!bo[i1] & bo[i2]);
+                    }
                 }
-            }
 
-            // Chi
-            for y in 0..5 {
-                for x in 0..5 {
-                    let i = x + 5 * y;
-                    let i1 = (x + 1) % 5 + 5 * y;
-                    let i2 = (x + 2) % 5 + 5 * y;
-                    state[2 * i] = be[i] ^ (!be[i1] & be[i2]);
-                    state[2 * i + 1] = bo[i] ^ (!bo[i1] & bo[i2]);
-                }
+                // Iota
+                state[0] ^= RC[round].even;
+                state[1] ^= RC[round].odd;
             }
-
-            // Iota
-            state[0] ^= RC[round].even;
-            state[1] ^= RC[round].odd;
+        }
         }
     }
 

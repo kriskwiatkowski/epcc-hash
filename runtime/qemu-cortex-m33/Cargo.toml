@@ -23,3 +23,12 @@ cortex-m-semihosting = "0.5"
 panic-semihosting = "0.6"
 keccak-test = { workspace = true }    #, features = ["semihosting-log"] }
 runtime-common = { workspace = true }
+
+[features]
+std = []
+# Selects the bit-interleaved 32-bit-lane permutation (`state: [u32; 50]`)
+# instead of the default 64-bit-lane one (`state: [u64; 25]`). Chosen
+# manually per build, e.g. for targets without efficient 64-bit ops;
+# mutually exclusive with the default.
+keccak32bit = []
+default = ["keccak32bit"]
