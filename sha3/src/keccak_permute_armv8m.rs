@@ -1,5 +1,4 @@
-core::arch::global_asm!(
-    r#"
+core::arch::global_asm!(r#"
 	.syntax unified
 	.thumb
 	.arch armv8-m.main
@@ -41,7 +40,7 @@ Lepcc_keccak_permute_asm.ENTRY:
 	PUSH.W {{r4, r5, r6, r7, r8, r9, r10, r11}}
 	ADR r1, Lepcc_keccak_rct
 	PUSH {{lr}}
-	SUB sp, sp, #24
+	SUB sp, sp, #28
 	STR r1, [sp, #20]
 Lepcc_keccak_permute_asm.round_loop_begin:
 	LDR.W r3, [r0, #32]
@@ -1571,13 +1570,12 @@ Lepcc_keccak_permute_asm.round_loop_begin:
 	STR.W r1, [r0, #4]
 	BNE Lepcc_keccak_permute_asm.round_loop_begin
 Lepcc_keccak_permute_asm.round_loop_end:
-	ADD sp, sp, #24
+	ADD sp, sp, #28
 	POP {{lr}}
 	POP.W {{r4, r5, r6, r7, r8, r9, r10, r11}}
 	BX lr
 
-"#
-);
+"#);
 
 unsafe extern "C" {
     pub fn epcc_keccak_permute_asm(state: *mut u32);

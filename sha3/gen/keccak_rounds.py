@@ -67,7 +67,12 @@ mDo0 = 2 * 4
 mDo1 = 3 * 4
 mDi0 = 4 * 4
 mRC = 5 * 4
-mSize = 6 * 4
+# One word padding beyond the 6 slots actually used (mDa0..mDi0, mRC): the
+# prologue does PUSH {lr} (4 bytes) then SUB sp, sp, mSize. 4 + 6*4 = 28,
+# which is not a multiple of 8, leaving SP 8-byte-misaligned for the whole
+# function body instead of just internally-but-safely offset. 4 + 7*4 = 32
+# restores AAPCS double-word alignment at every point inside the function.
+mSize = 7 * 4
 
 
 def KeccakRound0():

@@ -24,6 +24,7 @@ log-rtt = ["rtt-target"]
 cfg-if = "1.0.0"
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
+embedded-io = "0.7"
 log = { version = "0.4.29" }
 panic-probe = { version = "0.3" }
 rtt-target = { version = "0.5.0", optional = true }
