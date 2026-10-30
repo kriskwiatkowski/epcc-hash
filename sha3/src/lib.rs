@@ -42,5 +42,7 @@ pub(crate) const KECCAK_STATE_ZERO: KeccakState = [0u64; 25];
 
 #[cfg(target_arch = "arm")]
 mod bitinterleaving_armv8m;
+#[cfg(target_arch = "arm")]
+mod keccak_permute_armv8m;
 
 pub use bitinterleaving::{conv_from_bi, conv_into_bi};

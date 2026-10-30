@@ -12,8 +12,12 @@ from nervapy.arm.microarchitecture import Microarchitecture
 from nervapy.arm.pseudo import Label
 from nervapy.arm.registers import r0, r1, r3, r4, r5, r6, r7, r11, r12, lr, sp
 from pathlib import Path
+from writer import Writer
 
-_ROUND_CONSTANTS_WITH_TERMINATOR = [
+# String literals
+_RCT_LABEL = "epcc_keccak_rct"
+
+_RCT = [
     (0x00000001, 0x00000000),
     (0x00000000, 0x00000089),
     (0x00000000, 0x8000008B),
@@ -40,10 +44,33 @@ _ROUND_CONSTANTS_WITH_TERMINATOR = [
     (0x00000000, 0x80008082),
 ]
 
-_ROUND_CONSTANTS_TERMINATOR = 0x000000FF
-_ROUND_CONSTANTS_LABEL = "KeccakF1600_StatePermute_RoundConstantsWithTerminator"
-_STATE_PERMUTE = "epcc_keccak_f1600_permute"
+_RCT_TERMINATOR = 0x000000FF
 
+def gen_round_constants(asm_format=AssemblyFormat.GAS):
+    # No section/AREA directive here: Function places this block as the first
+    # thing inside its own code region (right after `.text` / `AREA ||.text||`),
+    # so it shares a section with the body and stays reachable from ADR.
+    if asm_format == AssemblyFormat.GAS:
+        lines = [
+            ".align 4",
+            _RCT_LABEL + ":",
+            "L" + _RCT_LABEL + ":",
+        ]
+
+        lines.extend("\t.long 0x{0:08X}, 0x{1:08X}".format(low, high) for low, high in _RCT)
+        lines.append("\t.long 0x{0:08X}".format(_RCT_TERMINATOR))
+        return "\n".join(lines) + "\n"
+    if asm_format == AssemblyFormat.ARMCC:
+        lines = [
+            "ALIGN    4",
+            _RCT_LABEL,
+            "L" + _RCT_LABEL,
+        ]
+
+        lines.extend("        DCD     0x{0:08X}, 0x{1:08X}".format(low, high) for low, high in _RCT)
+        lines.append("        DCD     0x{0:08X}".format(_RCT_TERMINATOR))
+        return "\n".join(lines) + "\n"
+    raise ValueError("Unsupported assembly format: {0}".format(asm_format))
 
 def _ror_delta(rot1, rot2):
     # The handwritten macros express rotations relative to each operand's alignment.
@@ -156,7 +183,7 @@ def xandnotiota(out, rot3, rot2, rcofs, last, mrc_ofs):
     if last == 1:
         LDR(r7, [r1.wb(), 32])
         STR(r1, [sp, mrc_ofs])
-        CMP(r7, 0xFF)
+        CMP(r7, _RCT_TERMINATOR)
     if rot3 > 0:
         EOR(r3, r3, r5.ROR(32 - rot3))
     else:
@@ -287,100 +314,52 @@ def KeccakThetaRhoPiChi(
         xandnotstr(dst4, r6, r7, r3, rot4, rot5, rot1)
         xandnot(r7, r3, r4, rot5, rot1, rot2)
 
+class Generator(object):
+    def __init__(self, asm_format=AssemblyFormat.GAS, target=Microarchitecture.CortexM33, output_dir=Path("."), lang="generic"):
+        self.asm_format = asm_format
+        self.target = target
+        self.output_dir = output_dir
+        self.lang = lang
 
-def _helper_function(name):
-    return Function(
-        name,
-        (),
-        target=Microarchitecture.CortexM33,
-        abi=arm_gnueabihf,
-        assembly_format=AssemblyFormat.GAS,
-        is_thumb=True,
-        report_generation=False,
-    )
+    def run_generator_and_write(self, filename, prefix=""):
+        ''' Run the generator and write the output files to the specified directory. '''
+        with Writer(self.output_dir, self.lang, filename) as w:
+            from keccak_rounds import KeccakRound0, KeccakRound1, KeccakRound2, KeccakRound3, mRC, mSize
 
+            state_arg = Argument(ptr(uint32_t))        # Output buffer
 
-def make_state_permute(func_name=_STATE_PERMUTE, asm_format=AssemblyFormat.GAS):
-    from keccak_rounds import KeccakRound0, KeccakRound1, KeccakRound2, KeccakRound3, mRC, mSize
+            f = Function(
+                "epcc_keccak_permute_asm",
+                (state_arg,),
+                target=Microarchitecture.CortexM33,
+                abi=arm_gnueabihf,
+                assembly_format=self.asm_format,
+                is_thumb=True,
+                report_generation=False,
+            )
 
-    round_loop = Label(func_name + "_RoundLoop")
+            # Add round constants to the function prelude. We may also reuse those from keccak_32.rs later.
+            f.code_prelude = gen_round_constants(self.asm_format).rstrip("\n")
 
-    f = Function(
-        func_name,
-        (),
-        target=Microarchitecture.CortexM33,
-        abi=arm_gnueabihf,
-        assembly_format=asm_format,
-        is_thumb=True,
-        report_generation=False,
-    )
-    f.high_register_strategy = HighRegisterStrategy.STMDB
-    f.alignment = 3
-
-    with f:
-        # Keep the round-constant cursor in memory so the final Iota of each 4-round
-        # block can update it with pre-indexed addressing.
-        ADR(r1, _ROUND_CONSTANTS_LABEL)
-        PUSH((lr,))
-        SUB(sp, sp, mSize)
-        STR(r1, [sp, mRC])
-        LABEL(round_loop)
-        # The original implementation unrolls four rounds at a time and loops on the
-        # comparison emitted by the last Iota step.
-        KeccakRound0()
-        KeccakRound1()
-        KeccakRound2()
-        KeccakRound3()
-        BNE(round_loop)
-        ADD(sp, sp, mSize)
-        POP((lr,))
-        RETURN()
-
-    return f
-
-
-def gen_state_permute(func_name=_STATE_PERMUTE, asm_format=AssemblyFormat.GAS):
-    return make_state_permute(func_name, asm_format).assembly
-
-
-def gen_round_constants_with_terminator(asm_format=AssemblyFormat.GAS):
-    if asm_format == AssemblyFormat.GAS:
-        # Emit both the public symbol and a local "L..." alias so ADR can target it.
-        lines = [
-            "\t.syntax unified",
-            "\t.thumb",
-            "\t.text",
-            "",
-            "\t.align 3",
-            _ROUND_CONSTANTS_LABEL + ":",
-            "L" + _ROUND_CONSTANTS_LABEL + ":",
-        ]
-        for low, high in _ROUND_CONSTANTS_WITH_TERMINATOR:
-            lines.append("\t.long 0x{0:08X}, 0x{1:08X}".format(low, high))
-        lines.append("\t.long 0x{0:08X}".format(_ROUND_CONSTANTS_TERMINATOR))
-        return "\n".join(lines) + "\n"
-
-    if asm_format == AssemblyFormat.ARMCC:
-        lines = [
-            "        THUMB",
-            "        AREA    ||.text||, CODE, READONLY",
-            "        ALIGN    8",
-            _ROUND_CONSTANTS_LABEL,
-            "L" + _ROUND_CONSTANTS_LABEL,
-        ]
-        for low, high in _ROUND_CONSTANTS_WITH_TERMINATOR:
-            lines.append("        DCD     0x{0:08X}, 0x{1:08X}".format(low, high))
-        lines.append("        DCD     0x{0:08X}".format(_ROUND_CONSTANTS_TERMINATOR))
-        return "\n".join(lines) + "\n"
-
-    raise ValueError("Unsupported assembly format: {0}".format(asm_format))
-
-
-def run_generator(asm_format=AssemblyFormat.GAS):
-    return gen_round_constants_with_terminator(asm_format) + "\n" + gen_state_permute(
-        asm_format=asm_format
-    )
-
+            with f:
+                # Keep the round-constant cursor in memory so the final Iota of each 4-round
+                # block can update it with pre-indexed addressing.
+                ADR(r1, _RCT_LABEL)
+                PUSH((lr,))
+                SUB(sp, sp, mSize)
+                STR(r1, [sp, mRC])
+                with Loop("round_loop") as loop:
+                    # The original implementation unrolls four rounds at a time and loops on the
+                    # comparison emitted by the last Iota step.
+                    KeccakRound0()
+                    KeccakRound1()
+                    KeccakRound2()
+                    KeccakRound3()
+                    BNE(loop.begin)
+                ADD(sp, sp, mSize)
+                POP((lr,))
+                RETURN()
+            w.write(f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate KeccakF1600 permutation assembly")
@@ -390,13 +369,9 @@ if __name__ == "__main__":
                     help="Output language (rust or generic)")
     args = parser.parse_args()
 
-    #gen = Generator(
-    #    target=Microarchitecture.CortexM33,
-    #    output_dir=args.output_dir,
-    #    lang=args.lang,
-    #    asm_format=AssemblyFormat.GAS)
-    asm =run_generator(AssemblyFormat.GAS)
-    output_file = args.output_dir / "keccak_permute.s"
-    with open(output_file, "w") as f:
-        f.write(asm)
-    print("Written to", output_file)
+    gen = Generator(
+        target=Microarchitecture.CortexM33,
+        output_dir=args.output_dir,
+        lang=args.lang,
+        asm_format=AssemblyFormat.GAS)
+    gen.run_generator_and_write("keccak_permute_armv8m")
