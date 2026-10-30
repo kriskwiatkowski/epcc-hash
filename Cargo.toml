@@ -25,7 +25,9 @@ overflow-checks = false
 opt-level = "s"
 lto = true
 panic = "abort"         # Don't use unwinding on embedded
-strip = "symbols"
+# "symbols" (the stronger option) would also strip _SEGGER_RTT, which
+# probe-rs's RTT auto-attach needs to find in the ELF symbol table.
+strip = "debuginfo"
 codegen-units = 1       # Better optimization
 overflow-checks = false
 

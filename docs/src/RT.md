@@ -135,15 +135,15 @@ cd runtime/stm32h573i-dk
 **Tests**
 
 ```bash
-cargo build --bin stm32h573i-dk-tests
-probe-rs run --chip STM32H573IIKx ../../target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-tests
+cargo build -p stm32h573i-dk --target thumbv8m.main-none-eabi
+probe-rs run --chip STM32H573IIKx target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-tests
 ```
 
 **Benchmarks**
 
 ```bash
-cargo build --bin stm32h573i-dk-bench
-probe-rs run --chip STM32H573IIKx ../../target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-bench
+cargo build -p stm32h573i-dk --target thumbv8m.main-none-eabi --debug
+probe-rs run --chip STM32H573IIKx target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-bench
 ```
 
 Output is printed over RTT. `probe-rs run` flashes the binary and attaches to RTT automatically.
