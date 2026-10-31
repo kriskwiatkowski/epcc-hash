@@ -12,7 +12,7 @@ fn main() -> ! {
 
     board.println(format_args!("{:<32} {:>12} {:>12}", "name", "cycles", "us"));
     board.println(format_args!("{:-<58}", ""));
-    for (name, f) in common::bench::BENCHMARKS {
+    for (name, f) in dut::bench::BENCHMARKS {
         let mut acc = f(0); // warm-up
         match board.measure_repeated(*f, &mut acc, K_NUM_ITERS) {
             Some((cycles, nanos)) => {

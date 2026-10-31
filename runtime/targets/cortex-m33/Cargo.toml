@@ -1,0 +1,23 @@
+[package]
+name = "cortex-m33"
+version = "0.1.0"
+edition = "2021"
+build = "../common/build.rs"
+
+[[bin]]
+name = "cortex-m33-tests"
+path = "../common/tests.rs"
+test = false
+bench = false
+
+[[bin]]
+name = "cortex-m33-bench"
+path = "../common/bench.rs"
+test = false
+bench = false
+
+[dependencies]
+cortex-m = "0.7"
+cortex-m-rt = "0.7"
+board-support = { workspace = true, features = ["board-semihosting"] }
+dut = { workspace = true }

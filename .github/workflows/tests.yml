@@ -52,4 +52,4 @@ jobs:
 
       - name: Build STM32H573i-DK firmware
         run: cargo build --target thumbv8m.main-none-eabi
-        working-directory: runtime/stm32h573i-dk
+        working-directory: runtime/targets/stm32h573i-dk

@@ -1,5 +1,5 @@
 [package]
-name = "runtime-host"
+name = "sha3-host-bench"
 version = "0.1.0"
 edition = "2021"
 publish = false

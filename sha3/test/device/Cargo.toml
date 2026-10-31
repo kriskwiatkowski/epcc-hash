@@ -1,0 +1,18 @@
+[package]
+name = "dut"
+version = "0.1.0"
+edition = "2021"
+
+# "dut" (device under test) is the fixed name `runtime/targets/*`'s harness
+# imports from -- it never names SHA3 or any other algorithm. Wiring this
+# specific crate in as `dut` lives entirely in the root Cargo.toml's
+# `[workspace.dependencies]`, so nothing under `runtime/` has to change when
+# it's eventually split into its own repo and this becomes a `[patch]`
+# instead of a plain path.
+[lib]
+test = false
+doctest = false
+
+[dependencies]
+keccak-test = { workspace = true }
+sha3-bench = { workspace = true }

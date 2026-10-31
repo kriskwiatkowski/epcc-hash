@@ -2,6 +2,11 @@
 name = "board-support"
 version = "0.1.0"
 edition = "2021"
+# Deliberately free of anything algorithm-specific (no SHA3/Keccak/etc
+# awareness): this, and the generic target crates under `runtime/targets/`,
+# are meant to be split into their own `runtime` repo once they've had a few
+# more iterations, and consumed from there by every crypto project. For now
+# they stay inside epcc-hash, which is their first real consumer/test bed.
 
 [lib]
 test = false
@@ -11,7 +16,7 @@ doctest = false
 # implementation re-exported from `lib.rs` (see ariel-os's per-board YAML +
 # generated-module pattern, which this borrows a lightweight version of).
 [features]
-board-qemu = ["cortex-m-semihosting", "panic-semihosting"]
+board-semihosting = ["cortex-m-semihosting", "panic-semihosting"]
 board-stm32h573i-dk = ["stm32h5xx-hal", "rtt-target", "panic-probe", "embedded-io", "log"]
 
 [dependencies]

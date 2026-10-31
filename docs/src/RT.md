@@ -1,6 +1,6 @@
 # Runtime Environments
 
-The `runtime` directory contains configuration for embedded targets. Each runtime is a separate crate and `runtime/common` contains common code shared between them. The project is implemented so that the same tests can be run on the host via `cargo test` and on real/emulated hardware via the `runtime/*` binaries.
+`runtime/` holds the algorithm-agnostic pieces, meant to eventually move into their own repo and be reused by other crypto projects (no SHA3/Keccak awareness anywhere in it): `runtime/board-support` is a `Board` type (init, print, cycle-measure, finish) selected per target by a Cargo feature, and `runtime/targets/<cpu>` are thin per-CPU crates (`Cargo.toml`, `.cargo/config.toml`, `memory.x`, plus the shared `tests.rs`/`bench.rs` entry points in `runtime/targets/common`) that produce the actual test/bench binaries. They import their test/benchmark tables from a fixed-name `dut` ("device under test") dependency rather than naming SHA3 directly; that dependency is wired to this project's `sha3/test/device` crate in the root `Cargo.toml`. The project is implemented so that the same tests can be run on the host via `cargo test` and on real/emulated hardware via the `runtime/targets/*` binaries.
 
 
 ## Running tests on native
@@ -52,11 +52,11 @@ all tests pass.
 ## Running benchmarks on the host
 
 ```bash
-cargo bench -p runtime-host
+cargo bench -p sha3-host-bench
 ```
 
 Useful during development when real hardware isn't at hand: runs the same
-`sha3_bench::BENCHMARKS` table as the embedded runtimes, via
+`sha3_bench::BENCHMARKS` table as the embedded targets, via
 [criterion](https://github.com/bheisler/criterion.rs). On x86/x86_64,
 [criterion-cycles-per-byte](https://github.com/wainwrightmark/criterion-cycles-per-byte)
 is used to report cycles (read via the `RDTSC` timestamp counter) rather
@@ -126,24 +126,24 @@ qemu-system-arm \
 
 ## Running on STM32H573I-DK
 
-Requires [probe-rs](https://probe.rs/). Build and flash from the `runtime/stm32h573i-dk` directory:
+Requires [probe-rs](https://probe.rs/). Build and flash from the `runtime/targets/stm32h573i-dk` directory:
 
 ```bash
-cd runtime/stm32h573i-dk
+cd runtime/targets/stm32h573i-dk
 ```
 
 **Tests**
 
 ```bash
 cargo build -p stm32h573i-dk --target thumbv8m.main-none-eabi
-probe-rs run --chip STM32H573IIKx target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-tests
+probe-rs run --chip STM32H573IIKx ../../target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-tests
 ```
 
 **Benchmarks**
 
 ```bash
-cargo build -p stm32h573i-dk --target thumbv8m.main-none-eabi --debug
-probe-rs run --chip STM32H573IIKx target/thumbv8m.main-none-eabi/debug/stm32h573i-dk-bench
+cargo build -p stm32h573i-dk --target thumbv8m.main-none-eabi --release
+probe-rs run --chip STM32H573IIKx ../../target/thumbv8m.main-none-eabi/release/stm32h573i-dk-bench
 ```
 
 Output is printed over RTT. `probe-rs run` flashes the binary and attaches to RTT automatically.

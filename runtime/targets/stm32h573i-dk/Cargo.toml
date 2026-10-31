@@ -6,13 +6,13 @@ build = "../common/build.rs"
 
 [[bin]]
 name = "stm32h573i-dk-tests"
-path = "../common/src/tests.rs"
+path = "../common/tests.rs"
 test = false
 bench = false
 
 [[bin]]
 name = "stm32h573i-dk-bench"
-path = "../common/src/bench.rs"
+path = "../common/bench.rs"
 test = false
 bench = false
 
@@ -20,5 +20,4 @@ bench = false
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
 board-support = { workspace = true, features = ["board-stm32h573i-dk"] }
-runtime-common = { workspace = true }
-keccak-test = { workspace = true }
+dut = { workspace = true }

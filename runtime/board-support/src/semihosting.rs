@@ -1,6 +1,8 @@
-//! Board support for QEMU's `mps2-an385` (Cortex-M3) and `mps2-an521`
-//! (Cortex-M33) machines: output over semihosting, and exit the emulator
-//! when done rather than idling forever.
+//! Board support for any ARM Cortex-M simulator that implements standard
+//! ARM semihosting -- QEMU's `mps2-an385`/`mps2-an521` machines, and Renode
+//! (via a `SemihostingHandler` attached in the board's `.repl` platform
+//! file). Output goes over semihosting, and the simulator exits when done
+//! rather than idling forever.
 
 use cortex_m_semihosting::{debug, hprintln};
 use panic_semihosting as _;
@@ -16,9 +18,8 @@ impl Board {
         hprintln!("{}", args);
     }
 
-    /// QEMU's instruction timing isn't representative of real hardware, so
-    /// this runs `f` once and reports no cycle count, same as the former
-    /// per-board `bench.rs` did.
+    /// A simulator's instruction timing isn't representative of real
+    /// hardware, so this runs `f` once and reports no cycle count.
     pub fn measure_repeated(
         &mut self,
         f: fn(u32) -> u32,

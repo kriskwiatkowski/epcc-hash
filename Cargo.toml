@@ -1,13 +1,13 @@
 [workspace]
 members = [
     "runtime/board-support",
-    "runtime/common",
-    "runtime/host",
-    "runtime/qemu-cortex-m3",
-    "runtime/qemu-cortex-m33",
-    "runtime/stm32h573i-dk",
+    "runtime/targets/cortex-m3",
+    "runtime/targets/cortex-m33",
+    "runtime/targets/stm32h573i-dk",
     "sha3",
     "sha3/test/bench",
+    "sha3/test/device",
+    "sha3/test/host",
     "sha3/test/ut",
     "sha3/test/kat",
     "xtask",
@@ -37,10 +37,14 @@ opt-level = 0
 
 [workspace.dependencies]
 board-support = { path = "runtime/board-support" }
+# "dut" (device under test) is the fixed name runtime/targets/*'s harness
+# imports from; it's what lets those crates stay free of any algorithm-
+# specific naming. Only this one line, not anything under runtime/, would
+# need to change (to a `[patch]`) once runtime/ becomes its own repo.
+dut = { path = "sha3/test/device" }
 keccak-test = { path = "sha3/test/ut" }
 keccak-kat = { path = "sha3/test/kat" }
 sha3-bench = { path = "sha3/test/bench" }
-runtime-common = { path = "runtime/common" }
 stm32h5xx-hal = { path = "3rd/stm32h5xx-hal" }
 epcc-keccak = { path = "sha3" }
 env_logger = "0.11"

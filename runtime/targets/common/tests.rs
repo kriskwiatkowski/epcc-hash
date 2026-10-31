@@ -10,7 +10,7 @@ fn main() -> ! {
 
     board.println(format_args!("{:<40} {:>6}", "name", "result"));
     board.println(format_args!("{:-<48}", ""));
-    for (name, f) in common::tests::TESTS {
+    for (name, f) in dut::tests::TESTS {
         f();
         // Note it will panic if the test fails, so we only print "ok" if it passes.
         board.println(format_args!("{:<40} {:>6}", name, "ok"));

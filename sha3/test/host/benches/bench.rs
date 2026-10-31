@@ -1,6 +1,6 @@
 //! Host-side micro-benchmarks, useful during development when real
 //! hardware isn't at hand. Runs the same `sha3_bench::BENCHMARKS` table
-//! the embedded runtimes under `runtime/` measure via the DWT cycle
+//! the embedded targets under `targets/` measure via the DWT cycle
 //! counter, reporting cycles here too via `criterion-cycles-per-byte`
 //! (the CPU's `RDTSC` timestamp counter on x86/x86_64) — but since
 //! `bitinterleaving_armv8m`'s assembly only compiles under
@@ -9,7 +9,7 @@
 //! frequency rather than the core's dynamic clock, so these numbers are
 //! good for relative comparisons but aren't the retired-instruction
 //! cycle counts DWT reports. For real on-device numbers, see
-//! `runtime/stm32h573i-dk`.
+//! `runtime/targets/stm32h573i-dk`.
 //!
 //! Each `BENCHMARKS` entry takes an accumulator and returns one derived
 //! from its result, so threading it through repeated calls

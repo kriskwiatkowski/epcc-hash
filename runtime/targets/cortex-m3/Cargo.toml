@@ -6,19 +6,18 @@ build = "../common/build.rs"
 
 [[bin]]
 name = "cortex-m3-tests"
-path = "../common/src/tests.rs"
+path = "../common/tests.rs"
 test = false
 bench = false
 
 [[bin]]
 name = "cortex-m3-bench"
-path = "../common/src/bench.rs"
+path = "../common/bench.rs"
 test = false
 bench = false
 
 [dependencies]
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
-board-support = { workspace = true, features = ["board-qemu"] }
-keccak-test = { workspace = true }    # features = ["semihosting-log"] }
-runtime-common = { workspace = true }
+board-support = { workspace = true, features = ["board-semihosting"] }
+dut = { workspace = true }

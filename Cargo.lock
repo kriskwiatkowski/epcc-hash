@@ -394,8 +394,7 @@ dependencies = [
  "board-support",
  "cortex-m",
  "cortex-m-rt",
- "keccak-test",
- "runtime-common",
+ "dut",
 ]
 
 [[package]]
@@ -405,8 +404,7 @@ dependencies = [
  "board-support",
  "cortex-m",
  "cortex-m-rt",
- "keccak-test",
- "runtime-common",
+ "dut",
 ]
 
 [[package]]
@@ -633,6 +631,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+]
+
+[[package]]
+name = "dut"
+version = "0.1.0"
+dependencies = [
+ "keccak-test",
+ "sha3-bench",
 ]
 
 [[package]]
@@ -1812,23 +1818,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "runtime-common"
-version = "0.1.0"
-dependencies = [
- "keccak-test",
- "sha3-bench",
-]
-
-[[package]]
-name = "runtime-host"
-version = "0.1.0"
-dependencies = [
- "criterion",
- "criterion-cycles-per-byte",
- "sha3-bench",
-]
-
-[[package]]
 name = "rustc-hash"
 version = "2.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2024,6 +2013,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha3-host-bench"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "criterion-cycles-per-byte",
+ "sha3-bench",
+]
+
+[[package]]
 name = "shake"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2130,8 +2128,7 @@ dependencies = [
  "board-support",
  "cortex-m",
  "cortex-m-rt",
- "keccak-test",
- "runtime-common",
+ "dut",
 ]
 
 [[package]]
