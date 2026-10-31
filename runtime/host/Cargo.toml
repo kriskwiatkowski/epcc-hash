@@ -10,5 +10,5 @@ criterion = "0.8"
 criterion-cycles-per-byte = "0.8"
 
 [[bench]]
-name = "bitinterleaving"
+name = "bench"
 harness = false

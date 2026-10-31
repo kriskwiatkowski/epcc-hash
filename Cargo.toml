@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "runtime/board-support",
     "runtime/common",
     "runtime/host",
     "runtime/qemu-cortex-m3",
@@ -35,6 +36,7 @@ overflow-checks = false
 opt-level = 0
 
 [workspace.dependencies]
+board-support = { path = "runtime/board-support" }
 keccak-test = { path = "sha3/test/ut" }
 keccak-kat = { path = "sha3/test/kat" }
 sha3-bench = { path = "sha3/test/bench" }

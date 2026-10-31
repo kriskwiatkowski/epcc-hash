@@ -182,6 +182,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "board-support"
+version = "0.1.0"
+dependencies = [
+ "cfg-if",
+ "cortex-m",
+ "cortex-m-semihosting",
+ "embedded-io",
+ "log",
+ "panic-probe",
+ "panic-semihosting",
+ "rtt-target",
+ "stm32h5xx-hal",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -376,11 +391,10 @@ dependencies = [
 name = "cortex-m3"
 version = "0.1.0"
 dependencies = [
+ "board-support",
  "cortex-m",
  "cortex-m-rt",
- "cortex-m-semihosting",
  "keccak-test",
- "panic-semihosting",
  "runtime-common",
 ]
 
@@ -388,11 +402,10 @@ dependencies = [
 name = "cortex-m33"
 version = "0.1.0"
 dependencies = [
+ "board-support",
  "cortex-m",
  "cortex-m-rt",
- "cortex-m-semihosting",
  "keccak-test",
- "panic-semihosting",
  "runtime-common",
 ]
 
@@ -2114,16 +2127,11 @@ dependencies = [
 name = "stm32h573i-dk"
 version = "0.1.0"
 dependencies = [
- "cfg-if",
+ "board-support",
  "cortex-m",
  "cortex-m-rt",
- "embedded-io",
  "keccak-test",
- "log",
- "panic-probe",
- "rtt-target",
  "runtime-common",
- "stm32h5xx-hal",
 ]
 
 [[package]]
