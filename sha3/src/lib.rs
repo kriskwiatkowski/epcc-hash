@@ -8,9 +8,8 @@ pub mod bitinterleaving;
 #[cfg(not(feature = "testing"))]
 mod bitinterleaving;
 mod consts;
-mod keccak_32_small;
+mod keccak_32;
 mod keccak_64;
-mod keccak_rounds;
 pub mod sha3;
 
 /// Apply the keccak permutation to `state` (24 rounds of
