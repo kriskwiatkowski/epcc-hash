@@ -13,7 +13,7 @@
 
 use epcc_keccak::{
     bitinterleaving::bitinterleaving_generic, conv_from_bi, conv_into_bi,
-    sha3::sha3_256,
+    keccak_32_permute, sha3::sha3_256,
 };
 
 fn bench_conv_into_bi(acc: u32) -> u32 {
@@ -51,8 +51,20 @@ fn bench_sha3_256(acc: u32) -> u32 {
     acc + acc + digest[0] as u32
 }
 
+fn bench_keccak_32_permute(acc: u32) -> u32 {
+    // Seed the state from `acc` so each call depends on the previous one;
+    // the remaining lanes are a fixed non-zero pattern.
+    let mut state = [0x5a5a_5a5au32; 50];
+    state[0] = acc;
+    state[1] = acc.wrapping_add(1);
+    keccak_32_permute(core::hint::black_box(&mut state));
+    let state = core::hint::black_box(state);
+    state[0] ^ state[1]
+}
+
 pub const BENCHMARKS: &[(&str, fn(u32) -> u32)] = &[
     ("sha3_256", bench_sha3_256),
+    ("keccak_32_permute", bench_keccak_32_permute),
     ("conv_into_bi", bench_conv_into_bi),
     ("generic_conv_into_bi", bench_generic_conv_into_bi),
     ("conv_from_bi", bench_conv_from_bi),

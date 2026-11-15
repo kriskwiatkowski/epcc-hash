@@ -42,7 +42,15 @@ pub(crate) const KECCAK_STATE_ZERO: KeccakState = [0u64; 25];
 
 #[cfg(target_arch = "arm")]
 mod bitinterleaving_armv8m;
-#[cfg(target_arch = "arm")]
+#[cfg(all(target_arch = "arm", not(feature = "no_asm")))]
 mod keccak_permute_armv8m;
 
 pub use bitinterleaving::{conv_from_bi, conv_into_bi};
+
+/// The 32-bit bit-interleaved Keccak-f\[1600\] permutation from
+/// `keccak_32` (whichever variant the build selects), exposed for the
+/// test and benchmark crates. Not part of the public API.
+#[cfg(feature = "testing")]
+pub fn keccak_32_permute(state: &mut [u32; 50]) {
+    Permute::permute(state);
+}

@@ -17,8 +17,12 @@ std = []
 # manually per build, e.g. for targets without efficient 64-bit ops;
 # mutually exclusive with the default.
 keccak32bit = []
+# Selects the unrolled version of the 32-bit-lane permutation.
+# Should be used together with `keccak32bit` for optimal performance on 32-bit lanes.
 keccak32-unrolled = []
-default = ["keccak32bit", "keccak32-unrolled"]
+# Don't use assembly
+no_asm = []
+default = ["keccak32bit", "no_asm", "keccak32-unrolled"]
 # Exposes internal modules (e.g. `bitinterleaving::bitinterleaving_generic`)
 # needed by the `keccak-test` crate to check hardware/optimized paths
 # against the portable reference implementation. Not part of the public API.

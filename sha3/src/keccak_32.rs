@@ -16,7 +16,7 @@ use crate::{conv_from_bi, conv_into_bi};
 use core::convert::TryInto;
 use core::iter::Iterator;
 
-#[cfg(target_arch = "arm")]
+#[cfg(all(target_arch = "arm", not(feature = "no_asm")))]
 use crate::keccak_permute_armv8m::epcc_keccak_permute_asm;
 
 // Round constants split into their even-bit and odd-bit halves (so that
@@ -109,50 +109,47 @@ fn rho_pi_chi_fused<F>(state: &mut [u32; 50], lane_index_fn: F)
 where
     F: Fn(usize) -> usize,
 {
-    // Pre-computed new_y values for each (x, y) pair.
-    // new_y = (2*x + 3*y) % 5, computed at gen-time.
-    let new_y_table: [[usize; 5]; 5] = [
-        [0, 2, 4, 1, 3], // y=0
-        [3, 0, 2, 4, 1], // y=1
-        [1, 3, 0, 2, 4], // y=2
-        [4, 1, 3, 0, 2], // y=3
-        [2, 4, 1, 3, 0], // y=4
+    // Chi works on rows of the *post-Pi* state B. Pi sends A[x, y] to
+    // B[y, 2x + 3y], so B[X, Y] = rot(A[(X + 3Y) % 5, X]): one output row
+    // gathers lanes from five different input rows. Every input lane is
+    // therefore needed before any output can be written in place, so take a
+    // copy of the input first.
+    let src = *state;
+
+    // Source lane index for each output lane: PI_SRC[y_out][x_out] is the
+    // index i = x + 5y of the input lane A[x, y] that Pi moves to
+    // B[x_out, y_out], i.e. (x_out + 3 * y_out) % 5 + 5 * x_out.
+    const PI_SRC: [[usize; 5]; 5] = [
+        [0, 6, 12, 18, 24], // y_out=0
+        [3, 9, 10, 16, 22], // y_out=1
+        [1, 7, 13, 19, 20], // y_out=2
+        [4, 5, 11, 17, 23], // y_out=3
+        [2, 8, 14, 15, 21], // y_out=4
     ];
 
-    // Process row by row: load all 5 rotated lanes, compute Chi, store immediately.
-    // This keeps intermediate values in local arrays (in registers), not in be/bo.
-    for y in 0..5 {
-        // Rho+Pi: Rotate and permute all 5 lanes in this row
+    for y_out in 0..5 {
+        // Rho+Pi: gather the 5 rotated lanes forming output row `y_out`.
         let mut rotated_e = [0u32; 5];
         let mut rotated_o = [0u32; 5];
-        for x in 0..5 {
-            let i = x + 5 * y;
+        for x_out in 0..5 {
+            let i = PI_SRC[y_out][x_out];
             let state_idx = lane_index_fn(i);
             let (ne, no) =
-                rotl64_bi(state[state_idx], state[state_idx + 1], RHO[i]);
-            rotated_e[x] = ne;
-            rotated_o[x] = no;
+                rotl64_bi(src[state_idx], src[state_idx + 1], RHO[i]);
+            rotated_e[x_out] = ne;
+            rotated_o[x_out] = no;
         }
 
-        // Chi: Compute for all 5 lanes using the rotated values, store immediately
+        // Chi along the output row.
         for x in 0..5 {
             let x_plus_1 = if x == 4 { 0 } else { x + 1 };
             let x_plus_2 = if x >= 3 { x - 3 } else { x + 2 };
 
-            let chi_e =
+            let state_idx = lane_index_fn(x + 5 * y_out);
+            state[state_idx] =
                 rotated_e[x] ^ (!rotated_e[x_plus_1] & rotated_e[x_plus_2]);
-            let chi_o =
+            state[state_idx + 1] =
                 rotated_o[x] ^ (!rotated_o[x_plus_1] & rotated_o[x_plus_2]);
-
-            // Determine the permuted position after Rho+Pi
-            let new_y = new_y_table[y][x];
-            let new_x = y;
-            let j = new_x + 5 * new_y;
-
-            // Store Chi result directly to the permuted position
-            let state_idx = lane_index_fn(j);
-            state[state_idx] = chi_e;
-            state[state_idx + 1] = chi_o;
         }
     }
 }
@@ -323,83 +320,75 @@ pub fn keccak_round3(state: &mut [u32; 50], rc_e: u32, rc_o: u32) {
 
 /// Apply the Keccak-f\[1600\] permutation to the bit-interleaved `state`
 /// (24 rounds of Theta, Rho, Pi, Chi, Iota).
-#[cfg_attr(not(feature = "keccak32-unrolled"), allow(dead_code))]
+#[cfg(not(feature = "keccak32-unrolled"))]
 fn permute_small(state: &mut [u32; 50]) {
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "arm")] {
-            unsafe {
-                epcc_keccak_permute_asm(state.as_mut_ptr());
-            }
-    } else  {
-        for round in 0..ROUNDS {
-            // Theta
-            let mut ce = [0u32; 5];
-            let mut co = [0u32; 5];
-            for x in 0..5 {
-                let mut e = 0u32;
-                let mut o = 0u32;
-                for y in 0..5 {
-                    let i = x + 5 * y;
-                    e ^= state[2 * i];
-                    o ^= state[2 * i + 1];
-                }
-                ce[x] = e;
-                co[x] = o;
-            }
-
-            // D[x] = C[x - 1] xor rotl64(C[x + 1], 1); rotl64(_, 1) is odd, so
-            // it swaps the even/odd halves (see rotl64_bi below).
-            let mut de = [0u32; 5];
-            let mut do_ = [0u32; 5];
-            for x in 0..5 {
-                let (re, ro) = rotl64_bi(ce[(x + 1) % 5], co[(x + 1) % 5], 1);
-                de[x] = ce[(x + 4) % 5] ^ re;
-                do_[x] = co[(x + 4) % 5] ^ ro;
-            }
+    for round in 0..ROUNDS {
+        // Theta
+        let mut ce = [0u32; 5];
+        let mut co = [0u32; 5];
+        for x in 0..5 {
+            let mut e = 0u32;
+            let mut o = 0u32;
             for y in 0..5 {
-                for x in 0..5 {
-                    let i = x + 5 * y;
-                    state[2 * i] ^= de[x];
-                    state[2 * i + 1] ^= do_[x];
-                }
+                let i = x + 5 * y;
+                e ^= state[2 * i];
+                o ^= state[2 * i + 1];
             }
-
-            // Rho + Pi
-            let mut be = [0u32; 25];
-            let mut bo = [0u32; 25];
-            for y in 0..5 {
-                for x in 0..5 {
-                    let i = x + 5 * y;
-                    let (ne, no) =
-                        rotl64_bi(state[2 * i], state[2 * i + 1], RHO[i]);
-                    let new_x = y;
-                    let new_y = (2 * x + 3 * y) % 5;
-                    let j = new_x + 5 * new_y;
-                    be[j] = ne;
-                    bo[j] = no;
-                }
-            }
-
-            // Chi
-            for y in 0..5 {
-                for x in 0..5 {
-                    let i = x + 5 * y;
-                    let i1 = (x + 1) % 5 + 5 * y;
-                    let i2 = (x + 2) % 5 + 5 * y;
-                    state[2 * i] = be[i] ^ (!be[i1] & be[i2]);
-                    state[2 * i + 1] = bo[i] ^ (!bo[i1] & bo[i2]);
-                }
-            }
-
-            // Iota
-            state[0] ^= RC[round].even;
-            state[1] ^= RC[round].odd;
+            ce[x] = e;
+            co[x] = o;
         }
-    }
+
+        // D[x] = C[x - 1] xor rotl64(C[x + 1], 1); rotl64(_, 1) is odd, so
+        // it swaps the even/odd halves (see rotl64_bi below).
+        let mut de = [0u32; 5];
+        let mut do_ = [0u32; 5];
+        for x in 0..5 {
+            let (re, ro) = rotl64_bi(ce[(x + 1) % 5], co[(x + 1) % 5], 1);
+            de[x] = ce[(x + 4) % 5] ^ re;
+            do_[x] = co[(x + 4) % 5] ^ ro;
+        }
+        for y in 0..5 {
+            for x in 0..5 {
+                let i = x + 5 * y;
+                state[2 * i] ^= de[x];
+                state[2 * i + 1] ^= do_[x];
+            }
+        }
+
+        // Rho + Pi
+        let mut be = [0u32; 25];
+        let mut bo = [0u32; 25];
+        for y in 0..5 {
+            for x in 0..5 {
+                let i = x + 5 * y;
+                let (ne, no) =
+                    rotl64_bi(state[2 * i], state[2 * i + 1], RHO[i]);
+                let new_x = y;
+                let new_y = (2 * x + 3 * y) % 5;
+                let j = new_x + 5 * new_y;
+                be[j] = ne;
+                bo[j] = no;
+            }
+        }
+
+        // Chi
+        for y in 0..5 {
+            for x in 0..5 {
+                let i = x + 5 * y;
+                let i1 = (x + 1) % 5 + 5 * y;
+                let i2 = (x + 2) % 5 + 5 * y;
+                state[2 * i] = be[i] ^ (!be[i1] & be[i2]);
+                state[2 * i + 1] = bo[i] ^ (!bo[i1] & bo[i2]);
+            }
+        }
+
+        // Iota
+        state[0] ^= RC[round].even;
+        state[1] ^= RC[round].odd;
     }
 }
 
-#[cfg_attr(feature = "keccak32-unrolled", allow(dead_code))]
+#[cfg(feature = "keccak32-unrolled")]
 fn permute_unrolled(state: &mut [u32; 50]) {
     for i in 0..(ROUNDS / 4) {
         keccak_round0(state, RC[4 * i + 0].even, RC[4 * i + 0].odd);
@@ -412,7 +401,11 @@ fn permute_unrolled(state: &mut [u32; 50]) {
 impl Permute for [u32; 50] {
     fn permute(&mut self) {
         cfg_if::cfg_if! {
-            if #[cfg(feature = "keccak32-unrolled")] {
+            if #[cfg(all(target_arch = "arm", not(feature = "no_asm")))] {
+                unsafe {
+                    epcc_keccak_permute_asm(self.as_mut_ptr());
+                }
+            } else if #[cfg(feature = "keccak32-unrolled")] {
                 permute_unrolled(self);
             } else {
                 permute_small(self);
