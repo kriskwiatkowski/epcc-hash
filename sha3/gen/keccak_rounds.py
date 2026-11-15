@@ -120,7 +120,17 @@ def KeccakRoundParameterized(
     Aka0, Aka1, Ake0, Ake1, Aki0, Aki1, Ako0, Ako1, Aku0, Aku1,
     Ama0, Ama1, Ame0, Ame1, Ami0, Ami1, Amo0, Amo1, Amu0, Amu1,
     Asa0, Asa1, Ase0, Ase1, Asi0, Asi1, Aso0, Aso1, Asu0, Asu1,
+    rc_ofs, lazy, last,
 ):
+    # rc_ofs: byte offset of this round's even round-constant word (the odd
+    #         word is at rc_ofs + 4), relative to the cursor in [sp, mRC].
+    # lazy:   1 leaves Rho rotations pending for the next round; 0 applies
+    #         them before storing (round 3, so the next 4-round block starts
+    #         from the classical representation).
+    # last:   1 on the final round of a 4-round block: advance the cursor and
+    #         set the flags for the loop's BNE. The last Iota then leaves Aba1 in
+#         r1 for the caller to store; otherwise it stays in lr, which the next
+#         round's first xor5str stores.
     xor5str(r3, Asu0, Agu0, Amu0, Abu1, Aku1, 22, 10, 3, 18, 28, lr, r0, Aba1)
     xor5(r7, Age1, Ame0, Abe0, Ake1, Ase1, 10, 22, 4, 7, 20)
     ROR(r3, r3, 32 - 22)
@@ -144,21 +154,21 @@ def KeccakRoundParameterized(
     xor5str(r4, Aba1, Aka0, Asa1, Aga1, Ama0, 0, 1, 12, 5, 19, r9, sp, mDo0)
     EOR(r11, r4, r7)
     xorrol(r12, r3, r4, 32)
-    KeccakThetaRhoPiChi(Amo1, Asa1, r9, 14, 0, Agu0, Ake1, r12, 10, 10, Asa1, Abi1, r8, 2, 12, Ake1, Amo1, r11, 23, 7, Abi1, Agu0, r2, 31, 1, 1, Asa1)
-    KeccakThetaRhoPiChi(Age0, Ama0, r10, 0, 11, Asi0, Age0, r2, 3, 30, Ako1, Asi0, r9, 12, 1, Abu0, Ako1, lr, 4, 18, Ama0, Abu0, r8, 9, 19, 1, Agu0)
+    KeccakThetaRhoPiChi(Amo1, Asa1, r9, 14, 0, Agu0, Ake1, r12, 10, 10, Asa1, Abi1, r8, 2, 12, Ake1, Amo1, r11, 23, 7, Abi1, Agu0, r2, 31, 1, lazy, Asa1)
+    KeccakThetaRhoPiChi(Age0, Ama0, r10, 0, 11, Asi0, Age0, r2, 3, 30, Ako1, Asi0, r9, 12, 1, Abu0, Ako1, lr, 4, 18, Ama0, Abu0, r8, 9, 19, lazy, Agu0)
     LDR(r8, [sp, mDa0])
-    KeccakThetaRhoPiChi(Asu1, Aka1, lr, 14, 22, Aka1, Abe1, r8, 18, 2, Abe1, Ami0, r10, 5, 4, Ami0, Ago1, r2, 8, 28, Ago1, Asu1, r9, 28, 31, 1, Abu0)
-    KeccakThetaRhoPiChi(Aki0, Aga0, r2, 31, 7, Abo0, Ase1, r9, 27, 14, Amu0, Aki0, r12, 19, 3, Aga0, Abo0, r8, 20, 5, Ase1, Amu0, r11, 1, 20, 1, Asu1)
+    KeccakThetaRhoPiChi(Asu1, Aka1, lr, 14, 22, Aka1, Abe1, r8, 18, 2, Abe1, Ami0, r10, 5, 4, Ami0, Ago1, r2, 8, 28, Ago1, Asu1, r9, 28, 31, lazy, Abu0)
+    KeccakThetaRhoPiChi(Aki0, Aga0, r2, 31, 7, Abo0, Ase1, r9, 27, 14, Amu0, Aki0, r12, 19, 3, Aga0, Abo0, r8, 20, 5, Ase1, Amu0, r11, 1, 20, lazy, Asu1)
     LDR(r9, [sp, mDo1])
-    KeccakThetaRhoPiChiIota(Aba0, r8, 0, Ame1, r10, 22, 23, Agi1, r2, 22, 9, Aso1, r9, 11, 13, Aku1, r12, 7, 28, 8, 0, 1, Amu0, r1, mRC)
+    KeccakThetaRhoPiChiIota(Aba0, r8, 0, Ame1, r10, 22, 23, Agi1, r2, 22, 9, Aso1, r9, 11, 13, Aku1, r12, 7, 28, rc_ofs, 0, lazy, Amu0, r1, mRC)
     LDR_W(r2, [sp, mDi0])
-    KeccakThetaRhoPiChi(Amo0, Asa0, r9, 14, 0, Agu1, Ake0, lr, 10, 10, Asa0, Abi0, r8, 1, 13, Ake0, Amo0, r10, 22, 8, Abi0, Agu1, r2, 30, 1, 1, Aba0)
-    KeccakThetaRhoPiChi(Age1, Ama1, r11, 1, 10, Asi1, Age1, r2, 3, 31, Ako0, Asi1, r9, 13, 0, Abu1, Ako0, r12, 4, 18, Ama1, Abu1, r8, 9, 20, 1, Agu1)
+    KeccakThetaRhoPiChi(Amo0, Asa0, r9, 14, 0, Agu1, Ake0, lr, 10, 10, Asa0, Abi0, r8, 1, 13, Ake0, Amo0, r10, 22, 8, Abi0, Agu1, r2, 30, 1, lazy, Aba0)
+    KeccakThetaRhoPiChi(Age1, Ama1, r11, 1, 10, Asi1, Age1, r2, 3, 31, Ako0, Asi1, r9, 13, 0, Abu1, Ako0, r12, 4, 18, Ama1, Abu1, r8, 9, 20, lazy, Agu1)
     LDR(r8, [sp, mDa1])
-    KeccakThetaRhoPiChi(Asu0, Aka0, r12, 13, 22, Aka0, Abe0, r8, 18, 1, Abe0, Ami1, r11, 5, 4, Ami1, Ago0, r2, 7, 28, Ago0, Asu0, r9, 28, 31, 1, Abu1)
-    KeccakThetaRhoPiChi(Aki1, Aga1, r2, 31, 7, Abo1, Ase0, r9, 28, 14, Amu1, Aki1, lr, 20, 3, Aga1, Abo1, r8, 21, 5, Ase0, Amu1, r10, 1, 21, 1, Asu0)
+    KeccakThetaRhoPiChi(Asu0, Aka0, r12, 13, 22, Aka0, Abe0, r8, 18, 1, Abe0, Ami1, r11, 5, 4, Ami1, Ago0, r2, 7, 28, Ago0, Asu0, r9, 28, 31, lazy, Abu1)
+    KeccakThetaRhoPiChi(Aki1, Aga1, r2, 31, 7, Abo1, Ase0, r9, 28, 14, Amu1, Aki1, lr, 20, 3, Aga1, Abo1, r8, 21, 5, Ase0, Amu1, r10, 1, 21, lazy, Asu0)
     LDR(r9, [sp, mDo0])
-    KeccakThetaRhoPiChiIota(Aba1, r8, 0, Ame0, r11, 22, 22, Agi0, r2, 21, 9, Aso0, r9, 10, 14, Aku0, lr, 7, 27, 12, 0, 1, Amu1, lr, mRC)
+    KeccakThetaRhoPiChiIota(Aba1, r8, 0, Ame0, r11, 22, 22, Agi0, r2, 21, 9, Aso0, r9, 10, 14, Aku0, lr, 7, 27, rc_ofs + 4, last, lazy, Amu1, r1 if last else lr, mRC)
 
 
 def KeccakRound1():
@@ -168,27 +178,33 @@ def KeccakRound1():
         Aka0, Aka1, Ake0, Ake1, Aki0, Aki1, Ako0, Ako1, Aku0, Aku1,
         Ama0, Ama1, Ame0, Ame1, Ami0, Ami1, Amo0, Amo1, Amu0, Amu1,
         Asa0, Asa1, Ase0, Ase1, Asi0, Asi1, Aso0, Aso1, Asu0, Asu1,
+        rc_ofs=8, lazy=1, last=0,
     )
 
 
 def KeccakRound2():
+    # Round 1's output layout, recovered from the hand-written assembly: each
+    # name says which memory word holds that logical word at this point.
     KeccakRoundParameterized(
-        Aba0, Aba1, Abe0, Abe1, Abi0, Abi1, Abo0, Abo1, Abu0, Abu1,
-        Aga0, Aga1, Age0, Age1, Agi0, Agi1, Ago0, Ago1, Agu0, Agu1,
-        Aka0, Aka1, Ake0, Ake1, Aki0, Aki1, Ako0, Ako1, Aku0, Aku1,
-        Ama0, Ama1, Ame0, Ame1, Ami0, Ami1, Amo0, Amo1, Amu0, Amu1,
-        Asa0, Asa1, Ase0, Ase1, Asi0, Asi1, Aso0, Aso1, Asu0, Asu1,
+        Aba0, Aba1, Age0, Age1, Aki1, Aki0, Amo1, Amo0, Asu0, Asu1,
+        Aka1, Aka0, Ame1, Ame0, Asi1, Asi0, Abo0, Abo1, Agu0, Agu1,
+        Asa0, Asa1, Abe1, Abe0, Agi0, Agi1, Ako1, Ako0, Amu0, Amu1,
+        Aga0, Aga1, Ake0, Ake1, Ami1, Ami0, Aso0, Aso1, Abu1, Abu0,
+        Ama1, Ama0, Ase0, Ase1, Abi0, Abi1, Ago1, Ago0, Aku1, Aku0,
+        rc_ofs=16, lazy=1, last=0,
     )
 
 
 def KeccakRound3():
+    # Round 2's output layout (see KeccakRound2).
     # Round 3 resolves the lazy rotations so the next 4-round block restarts from
     # the classical representation.
     KeccakRoundParameterized(
-        Aba0, Aba1, Abe0, Abe1, Abi0, Abi1, Abo0, Abo1, Abu0, Abu1,
-        Aga0, Aga1, Age0, Age1, Agi0, Agi1, Ago0, Ago1, Agu0, Agu1,
-        Aka0, Aka1, Ake0, Ake1, Aki0, Aki1, Ako0, Ako1, Aku0, Aku1,
-        Ama0, Ama1, Ame0, Ame1, Ami0, Ami1, Amo0, Amo1, Amu0, Amu1,
-        Asa0, Asa1, Ase0, Ase1, Asi0, Asi1, Aso0, Aso1, Asu0, Asu1,
+        Aba0, Aba1, Ame1, Ame0, Agi1, Agi0, Aso1, Aso0, Aku1, Aku0,
+        Asa1, Asa0, Ake1, Ake0, Abi1, Abi0, Amo1, Amo0, Agu0, Agu1,
+        Ama1, Ama0, Age1, Age0, Asi1, Asi0, Ako0, Ako1, Abu1, Abu0,
+        Aka1, Aka0, Abe1, Abe0, Ami0, Ami1, Ago1, Ago0, Asu1, Asu0,
+        Aga1, Aga0, Ase0, Ase1, Aki1, Aki0, Abo1, Abo0, Amu1, Amu0,
+        rc_ofs=24, lazy=0, last=1,
     )
     STR_W(r1, [r0, Aba1])
