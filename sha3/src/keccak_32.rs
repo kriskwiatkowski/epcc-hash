@@ -67,6 +67,24 @@ fn rotl64_bi(e: u32, o: u32, r: u32) -> (u32, u32) {
     }
 }
 
+/// Rotate a bit-interleaved 64-bit lane left by `r` bits.
+/// Even/odd halves and rotations of odd amounts cause swaps.
+#[inline]
+#[allow(dead_code)] // Used in documentation examples
+fn rotl64(w: u32, r: u32, eo: usize) -> u32 {
+    if r & 1 == 0 {
+        // Rotate is even -> odd stays odd, even stays even
+        w.rotate_left(r >> 1)
+    } else {
+        // Rotate is odd -> odd becomes even, even becomes odd
+        if eo == 0 {
+            w.rotate_left(r >> 1)
+        } else {
+            w.rotate_left((r + 1) >> 1)
+        }
+    }
+}
+
 /// XOR five lanes and return the even/odd halves of the result.
 /// Used in the Theta step.
 #[inline]
@@ -121,20 +139,23 @@ where
         [2, 8, 14, 15, 21], // y_out=4
     ];
 
-    // TODO: don't do it for even and then odd. It needs to be done first for even, then for odd.
-    // that way uses less registers.
+    let mut rotated_e = [0u32; 5];
+    let mut rotated_o = [0u32; 5];
     for y_out in 0..5 {
         // Rho+Pi: gather the 5 rotated lanes forming output row `y_out`.
-        let mut rotated_e = [0u32; 5];
-        let mut rotated_o = [0u32; 5];
         for x_out in 0..5 {
             let i = PI_SRC[y_out][x_out];
             let state_idx = lane_index_fn(i);
-            // Performs rho
-            let (ne, no) =
-                rotl64_bi(state[state_idx], state[state_idx + 1], RHO[i]);
-            rotated_e[x_out] = ne;
-            rotated_o[x_out] = no;
+            let ne = rotl64(state[state_idx + 0], RHO[i], 0);
+            let no = rotl64(state[state_idx + 1], RHO[i], 1);
+            // If value of RHO[i] is odd, then even->odd and odd->even.
+            if RHO[i] & 1 == 0 {
+                rotated_e[x_out] = ne;
+                rotated_o[x_out] = no;
+            } else {
+                rotated_e[x_out] = no;
+                rotated_o[x_out] = ne;
+            }
         }
 
         // Chi along the output row.
