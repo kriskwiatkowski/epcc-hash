@@ -122,6 +122,7 @@ fn theta_d_bi(c_e: &[u32; 5], c_o: &[u32; 5], x: usize) -> (u32, u32) {
 /// This mirrors the assembly's approach: process row by row, loading rotated lanes,
 /// computing Chi immediately without intermediate array storage. Keeps hot data in
 /// registers to minimize cache misses and enable instruction-level parallelism.
+/// TODO: Next step is to make this function work sequentially - first with odd then even halves of the lanes.
 #[inline]
 #[allow(dead_code)] // Reference implementation
 fn rho_pi_chi_fused<F>(state: &mut [u32; 50], lane_index_fn: F)
