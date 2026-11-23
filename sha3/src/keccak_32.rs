@@ -129,15 +129,21 @@ fn rho_pi_chi_fused<F>(state: &mut [u32; 50], lane_index_fn: F)
 where
     F: Fn(usize) -> usize,
 {
-    // Source lane index for each output lane: PI_SRC[y_out][x_out] is the
-    // index i = x + 5y of the input lane A[x, y] that Pi moves to
-    // B[x_out, y_out], i.e. (x_out + 3 * y_out) % 5 + 5 * x_out.
+    // The table corresponds to Algorithm 3 of FIPS-202. The goal of keeping it here precomputed,
+    // is to avoid "% 5" operation. The table, answers the question:
+    // "Which lane of A does the output lane A'[x,y] come from". PI_SRC[y] corresponds
+    // to one whole output row (5 lanes), so
+    //   A'[x,y] = A[PI_SRC[y][x]].
+    // With x_src = (x+3y) % 5 and y_src = x, the table can be computed in a following manner:
+    //   PI_SRC[y][x] = x_src + 5*y_src = (x+3y) % 5 + 5*x
+    // So, when I need A'[x,y] then I look at PI_SRC[y][x], which gives me location of the
+    // lane in A table that I need.
     const PI_SRC: [[usize; 5]; 5] = [
-        [0, 6, 12, 18, 24], // y_out=0
-        [3, 9, 10, 16, 22], // y_out=1
-        [1, 7, 13, 19, 20], // y_out=2
-        [4, 5, 11, 17, 23], // y_out=3
-        [2, 8, 14, 15, 21], // y_out=4
+        [0, 6, 12, 18, 24], // y=0
+        [3, 9, 10, 16, 22], // y=1
+        [1, 7, 13, 19, 20], // y=2
+        [4, 5, 11, 17, 23], // y=3
+        [2, 8, 14, 15, 21], // y=4
     ];
 
     let mut rotated_e = [0u32; 5];
@@ -164,7 +170,7 @@ where
             let x_plus_1 = if x == 4 { 0 } else { x + 1 };
             let x_plus_2 = if x >= 3 { x - 3 } else { x + 2 };
             // TODO: it works either by chance or I don't fully get it.
-            // 1. why % 5
+            // 1. explain why we do % 5?
             // 2. how comes it PI_SRC is identity after 4 rounds (must be related)
             let i = lane_index_fn(PI_SRC[y_out][(x + y_out) % 5]);
 
@@ -410,6 +416,25 @@ fn permute_small(state: &mut [u32; 50]) {
 #[cfg(feature = "keccak32-unrolled")]
 fn permute_unrolled(state: &mut [u32; 50]) {
     for i in 0..(ROUNDS / 4) {
+        // We need 4 unrolled rounds. Each round leaves the lanes in a different
+        // physical layout, but after 4 rounds every lane is back in its own slot.
+        //
+        // Pi (Algorithm 3 of FIPS-202) says output lane (x, y) comes from input
+        // lane ((x + 3y) % 5, x).
+        // Code stores result in place, that is result x of row y goes into slot
+        // PI_SRC[y][x'], with x' = (x + s*y) % 5. Before this round, that slot
+        // held the input lane of output (x', y), which by Pi is lane
+        // ((x' + 3y) % 5, x'). Substituting x':
+        //   first:  x' + 3y = (x + s*y) + 3y = x + (s+3)*y
+        //   second: x'      =  x + s*y
+        // So each round, logical lane (x, y) moves into a new lane T(x,y):
+        //   T(x, y) = (x + (s+3)*y, x + s*y) % 5.
+        // We can represent this transformation as a matrix multiplication modulo 5.
+        //   T(x, y) =  M * (x, y),  where M = [[1, s+3], [1, s]]
+        // In this code we use s=1, with it we get M=[[1, 4], [1, 1]]. After four
+        // rounds, M is multiplied 4 times. We can notice that M^4 = I (mod 5). That
+        // is, after 4 rounds the lanes return to their original positions. The lane
+        // maps L1, L2, L3 are M, M^2, M^3, and round 4 starts again from the identity.
         keccak_round0(state, RC[4 * i + 0].even, RC[4 * i + 0].odd);
         keccak_round1(state, RC[4 * i + 1].even, RC[4 * i + 1].odd);
         keccak_round2(state, RC[4 * i + 2].even, RC[4 * i + 2].odd);
