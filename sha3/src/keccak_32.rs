@@ -435,6 +435,8 @@ fn permute_unrolled(state: &mut [u32; 50]) {
         // rounds, M is multiplied 4 times. We can notice that M^4 = I (mod 5). That
         // is, after 4 rounds the lanes return to their original positions. The lane
         // maps L1, L2, L3 are M, M^2, M^3, and round 4 starts again from the identity.
+        // NOTE: with other values for s, the identity may be reached after 4, 8 or
+        // 24 rounds.
         keccak_round0(state, RC[4 * i + 0].even, RC[4 * i + 0].odd);
         keccak_round1(state, RC[4 * i + 1].even, RC[4 * i + 1].odd);
         keccak_round2(state, RC[4 * i + 2].even, RC[4 * i + 2].odd);
